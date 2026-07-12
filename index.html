@@ -88,6 +88,21 @@
           </select>
         </div>
       </div>
+      <div class="grid" style="margin-top:12px">
+        <div>
+          <label for="topicCategory">房仲自媒體主題分類</label>
+          <select id="topicCategory"></select>
+        </div>
+        <div>
+          <label for="topicSubtopic">內容子題</label>
+          <select id="topicSubtopic"></select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label for="conversionGoal">轉化目標</label>
+        <select id="conversionGoal"></select>
+        <div class="hint">專為房仲打造：自媒體經營、短影音拍攝教學、AI內容工具、海外置產投資。讓內容不只是曝光，而是變成持續帶來客戶的資產。</div>
+      </div>
       <div id="error"></div>
     </section>
 
@@ -105,6 +120,13 @@
   <script>
     const GPT_MODEL = "gpt-5.6-terra";
     const IMAGE_MODEL = "V3 圖片生成模型";
+    const TOPIC_LIBRARY = {
+      "自媒體經營": ["個人定位", "內容企劃", "IP人設", "粉絲互動", "私域轉化"],
+      "短影音拍攝教學": ["開場Hook", "鏡頭語言", "口播腳本", "剪輯節奏", "完播率優化"],
+      "AI內容工具": ["腳本生成", "分鏡生成", "字幕優化", "標題封面", "內容再利用"],
+      "海外置產投資": ["區域分析", "現金流模型", "風險控管", "稅務觀念", "跨境成交流程"]
+    };
+    const CONVERSION_GOALS = ["私訊諮詢", "名單留單", "預約帶看", "成交轉化"];
     const $ = id => document.getElementById(id);
 
     $("toggleKey").onclick = () => {
@@ -114,6 +136,19 @@
       $("apiKey").value = "";
     };
 
+    function fillSelect(id, values) {
+      $(id).innerHTML = values.map(value => `<option>${value}</option>`).join("");
+    }
+
+    function syncSubtopics() {
+      fillSelect("topicSubtopic", TOPIC_LIBRARY[$("topicCategory").value] || []);
+    }
+
+    fillSelect("topicCategory", Object.keys(TOPIC_LIBRARY));
+    fillSelect("conversionGoal", CONVERSION_GOALS);
+    syncSubtopics();
+    $("topicCategory").onchange = syncSubtopics;
+
     function systemPrompt() {
       return `你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。`;
     }
@@ -122,6 +157,9 @@
       return `請依照以下條件產出內容：
 
 主題：${$("topic").value.trim()}
+房仲自媒體主題分類：${$("topicCategory").value}
+內容子題：${$("topicSubtopic").value}
+轉化目標：${$("conversionGoal").value}
 內容方向：${$("pillar").value}
 輸出格式：${$("format").value}
 
@@ -138,7 +176,9 @@
    - Canva 排版指引
    - V3 檢查：Apple / Netflix / Luxury / Documentary / Human，避免 Fake Guru / Overhype / Clickbait / Hard Sell
 
-請讓內容適合台灣房仲、馬來西亞置產客戶、高收入家庭與個人品牌新手。`;
+請讓內容適合台灣房仲、馬來西亞置產客戶、高收入家庭與個人品牌新手。
+內容必須專為房仲打造，分享如何用短影音與自媒體建立個人品牌、放大曝光，並把流量轉化為實際成交。
+請把每段內容都導向「${$("conversionGoal").value}」，不要只做曝光型文案。`;
     }
 
     async function streamGPT(apiKey, onText) {
