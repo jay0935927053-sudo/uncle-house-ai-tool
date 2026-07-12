@@ -63,6 +63,11 @@
     <section class="box">
       <label for="topic">主題</label>
       <textarea id="topic" placeholder="例：每天發物件照沒人看、AI 工具幫房仲省時間、馬來西亞置產怎麼跟客戶說"></textarea>
+      <div style="margin-top:12px">
+        <label for="topicContent">主題內容</label>
+        <select id="topicContent"></select>
+        <div class="hint">可直接選 V3 內建房仲主題；選擇後會自動帶入上方主題欄，也可以再手動修改。</div>
+      </div>
       <div class="grid" style="margin-top:12px">
         <div>
           <label for="pillar">內容方向</label>
@@ -126,6 +131,91 @@
       "AI內容工具": ["腳本生成", "分鏡生成", "字幕優化", "標題封面", "內容再利用"],
       "海外置產投資": ["區域分析", "現金流模型", "風險控管", "稅務觀念", "跨境成交流程"]
     };
+    const TOPIC_CONTENT_GROUPS = [
+      {
+        category: "開發成交",
+        topics: [
+          "客戶為什麼不回訊息",
+          "屋主為什麼不降價",
+          "為什麼看房很多次還是不買",
+          "房仲最容易成交的關鍵",
+          "高資產客戶在意什麼",
+          "如何讓客戶主動找上門",
+          "客戶其實都在偷偷觀察你",
+          "真正讓客戶下決定的不是價格"
+        ]
+      },
+      {
+        category: "買房避坑",
+        topics: [
+          "買房最容易踩的坑",
+          "首購族最常犯的錯",
+          "換屋族最容易後悔的決定",
+          "買房前一定要知道的真相",
+          "建商不一定會告訴你的事",
+          "預售屋最大的風險",
+          "中古屋最容易忽略的問題",
+          "房價下跌時該怎麼辦"
+        ]
+      },
+      {
+        category: "屋主賣屋",
+        topics: [
+          "為什麼房子一直賣不掉",
+          "降價就一定賣得掉嗎",
+          "房子為什麼越賣越便宜",
+          "屋主最常做錯的一件事",
+          "委託房仲前必須知道的事",
+          "賣房前一定要準備什麼"
+        ]
+      },
+      {
+        category: "房仲職涯",
+        topics: [
+          "房仲新人最容易放棄的原因",
+          "房仲收入不穩的真相",
+          "為什麼努力卻沒有成交",
+          "房仲每天到底在忙什麼",
+          "房仲最有價值的能力",
+          "頂尖房仲和一般房仲差在哪"
+        ]
+      },
+      {
+        category: "房仲自媒體",
+        topics: [
+          "不會拍影片的房仲怎麼辦",
+          "房仲自媒體真的能成交嗎",
+          "AI會取代房仲嗎",
+          "AI如何幫房仲增加成交",
+          "一人公司房仲的未來",
+          "個人品牌如何建立信任"
+        ]
+      },
+      {
+        category: "爆點議題",
+        topics: [
+          "房仲最不想告訴你的真相",
+          "99%的人買房都忽略這件事",
+          "為什麼有人買房後開始後悔",
+          "現在到底該不該買房",
+          "房價真的還會漲嗎",
+          "房仲這個行業值得做嗎",
+          "有錢人買房和你想的不一樣",
+          "為什麼越有錢的人越敢買房"
+        ]
+      },
+      {
+        category: "情感共鳴",
+        topics: [
+          "為什麼努力的人反而賺不到錢",
+          "中年後最怕的不是沒錢",
+          "客戶不是不買只是還不相信你",
+          "很多人買房其實買錯了",
+          "為什麼有些房仲永遠不缺客戶",
+          "你以為客戶在比價格其實不是"
+        ]
+      }
+    ];
     const CONVERSION_GOALS = ["私訊諮詢", "名單留單", "預約帶看", "成交轉化"];
     const $ = id => document.getElementById(id);
 
@@ -140,14 +230,27 @@
       $(id).innerHTML = values.map(value => `<option>${value}</option>`).join("");
     }
 
+    function fillTopicContentSelect() {
+      const groups = TOPIC_CONTENT_GROUPS.map(group => {
+        const options = group.topics.map(topic => `<option value="${topic}">${topic}</option>`).join("");
+        return `<optgroup label="${group.category}">${options}</optgroup>`;
+      }).join("");
+      $("topicContent").innerHTML = `<option value="">自行輸入 / 不指定</option>${groups}`;
+    }
+
     function syncSubtopics() {
       fillSelect("topicSubtopic", TOPIC_LIBRARY[$("topicCategory").value] || []);
     }
 
+    fillTopicContentSelect();
     fillSelect("topicCategory", Object.keys(TOPIC_LIBRARY));
     fillSelect("conversionGoal", CONVERSION_GOALS);
     syncSubtopics();
     $("topicCategory").onchange = syncSubtopics;
+    $("topicContent").onchange = () => {
+      const selectedTopic = $("topicContent").value;
+      if (selectedTopic) $("topic").value = selectedTopic;
+    };
 
     function systemPrompt() {
       return `你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。`;
@@ -157,6 +260,7 @@
       return `請依照以下條件產出內容：
 
 主題：${$("topic").value.trim()}
+主題內容選項：${$("topicContent").value || "自行輸入"}
 房仲自媒體主題分類：${$("topicCategory").value}
 內容子題：${$("topicSubtopic").value}
 轉化目標：${$("conversionGoal").value}
