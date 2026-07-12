@@ -182,7 +182,7 @@
     }
 
     async function streamGPT(apiKey, onText) {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,12 +190,11 @@
         },
         body: JSON.stringify({
           model: GPT_MODEL,
-          max_completion_tokens: 8000,
+          instructions: systemPrompt(),
+          input: userPrompt(),
+          max_output_tokens: 8000,
           stream: true,
-          messages: [
-            { role: "system", content: systemPrompt() },
-            { role: "user", content: userPrompt() }
-          ]
+          reasoning: { effort: "low" }
         })
       });
       if (!res.ok) {
@@ -205,11 +204,12 @@
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let outputText = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\\n");
+        const lines = buffer.split("\n");
         buffer = lines.pop();
         for (const line of lines) {
           if (!line.startsWith("data: ")) continue;
@@ -217,10 +217,19 @@
           if (data === "[DONE]") continue;
           try {
             const json = JSON.parse(data);
-            const text = json.choices?.[0]?.delta?.content;
-            if (text) onText(text);
+            const text =
+              json.type === "response.output_text.delta" ? json.delta :
+              json.type === "response.output_text.done" && !outputText ? json.text :
+              "";
+            if (text) {
+              outputText += text;
+              onText(text);
+            }
           } catch {}
         }
+      }
+      if (!outputText.trim()) {
+        throw new Error("API 已回應，但沒有傳回文字內容。請確認 API Key 有 GPT-5.6 Terra 權限與可用額度。");
       }
     }
 
@@ -231,9 +240,16 @@
       if (!apiKey) return showError("請先貼上 OpenAI API Key。");
       if (!topic) return showError("請先輸入主題。");
       $("generate").disabled = true;
-      $("result").textContent = "";
+      $("result").textContent = "正在連線 GPT-5.6 Terra，請稍候...";
+      let hasText = false;
       try {
-        await streamGPT(apiKey, text => $("result").textContent += text);
+        await streamGPT(apiKey, text => {
+          if (!hasText) {
+            $("result").textContent = "";
+            hasText = true;
+          }
+          $("result").textContent += text;
+        });
       } catch (e) {
         showError("生成失敗：" + e.message);
       } finally {
@@ -242,13 +258,17 @@
     };
 
     $("copy").onclick = async () => {
-      await navigator.clipboard.writeText($("result").textContent);
+      const text = getResultText();
+      if (!text) return showError("目前沒有可複製內容，請先成功生成。");
+      await navigator.clipboard.writeText(text);
       $("copy").textContent = "已複製";
       setTimeout(() => $("copy").textContent = "複製結果", 1200);
     };
 
     $("download").onclick = () => {
-      const blob = new Blob([$("result").textContent], { type: "text/plain;charset=utf-8" });
+      const text = getResultText();
+      if (!text) return showError("目前沒有可下載內容，請先成功生成。");
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "房叔AI提示詞.txt";
@@ -256,8 +276,15 @@
       URL.revokeObjectURL(a.href);
     };
 
+    function getResultText() {
+      const text = $("result").textContent.trim();
+      if (!text || text === "生成結果會出現在這裡。" || text.startsWith("正在連線")) return "";
+      return text;
+    }
+
     function showError(message) {
       $("error").innerHTML = `<div class="error">${message}</div>`;
+      $("result").textContent = message;
     }
   </script>
 </body>
