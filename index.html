@@ -1,691 +1,224 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>房叔自媒體學院｜AI 提示詞生成器</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --gold:#C9A227;--gold2:#E8B923;--gold-light:#F5D060;--gold-dark:#8B6914;
-  --black:#000;--dark:#111;--dark2:#1A1A1A;
-  --white:#fff;--gray:#F5F5F5;--gray2:#EEEEEE;--gray3:#DDDDDD;
-  --text:#1A1A1A;--text2:#555;--text3:#999;
-  --red:#DC2626;--green:#16A34A;--blue:#2563EB;
-}
-body{font-family:'Noto Sans TC','PingFang TC',sans-serif;background:var(--white);color:var(--text);line-height:1.6}
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:var(--gray)}
-::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
-input,textarea,button{font-family:inherit}
-textarea:focus,input:focus{outline:2px solid var(--gold)!important;outline-offset:-1px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
-.fade-in{animation:fadeIn .3s ease}
-.gold-text{background:linear-gradient(90deg,#C9A227,#F5D060,#C9A227);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 3s linear infinite}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>房叔 AI 提示詞生成器</title>
+  <style>
+    :root{--gold:#c9a227;--black:#080808;--line:#e8e2d5;--paper:#fffaf0}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",Arial,sans-serif;background:#f6f2e9;color:#151515}
+    header{background:var(--black);color:white;border-bottom:4px solid var(--gold);padding:18px}
+    .brand{max-width:860px;margin:auto;display:flex;align-items:center;gap:14px}
+    .brand img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+    h1{font-size:20px;margin:0;font-weight:900}
+    .sub{font-size:12px;color:#d6c48a;margin-top:3px}
+    main{max-width:860px;margin:20px auto;padding:0 14px 40px}
+    .box{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 8px 28px rgba(0,0,0,.05)}
+    label{display:block;font-size:13px;font-weight:800;margin:0 0 8px}
+    input,textarea,select{width:100%;border:1.5px solid #ddd;border-radius:10px;padding:12px;font-size:15px;background:white}
+    textarea{min-height:100px;resize:vertical;line-height:1.7}
+    input:focus,textarea:focus,select:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .hint{font-size:12px;color:#666;line-height:1.7;margin-top:8px}
+    .model{display:inline-flex;gap:8px;align-items:center;background:#151515;color:#f5d060;border:1px solid #4e3f14;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    button{border:0;border-radius:10px;padding:12px 16px;font-weight:900;cursor:pointer}
+    .primary{background:linear-gradient(135deg,#c9a227,#f5d060,#c9a227);color:#111;flex:1;min-width:180px}
+    .secondary{background:#151515;color:white}
+    .ghost{background:#f3f3f3;color:#333}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    pre{white-space:pre-wrap;word-break:break-word;background:#111;color:#f8f4e8;border-radius:12px;padding:16px;line-height:1.8;min-height:220px;overflow:auto}
+    .error{background:#fff1f1;color:#b91c1c;border:1px solid #fecaca;border-radius:10px;padding:10px;font-size:13px;margin-top:10px}
+    .ok{background:var(--paper);border-left:4px solid var(--gold);padding:12px;border-radius:10px;font-size:13px;line-height:1.7}
+    @media(max-width:640px){.grid{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
+  </style>
 </head>
 <body>
-<div id="root"></div>
-
-<script type="text/babel">
-const {useState,useRef,useEffect} = React;
-
-/* ── Theme ── */
-const G="#C9A227", G2="#E8B923", BK="#000", WH="#fff", GR="#F5F5F5";
-
-/* ── Config ── */
-const PILLARS=[
-  {code:"A",name:"短影音拍攝技巧",pain:"不知道怎麼拍、怕醜、設備問題"},
-  {code:"B",name:"選題策略",pain:"不知道拍什麼、拍了沒人看"},
-  {code:"C",name:"個人品牌建立",pain:"客戶不認識你、轉介紹少"},
-  {code:"D",name:"客戶開發",pain:"主動開發困難、靠等轉介紹"},
-  {code:"E",name:"自媒體營運",pain:"發了沒成效、不懂數據分析"},
-  {code:"F",name:"變現策略",pain:"收入天花板、想建立被動收入"},
-  {code:"G",name:"AI內容工具",pain:"不知道AI能幫什麼、怕被取代"},
-  {code:"H",name:"海外置產觀察",pain:"客戶問海外置產不知道怎麼答"},
-];
-const SCRIPT_TYPES=[
-  {id:"shorts",label:"⚡ 短影音腳本",desc:"IGNITE六幕 60秒"},
-  {id:"long",label:"🎬 長影片腳本",desc:"七幕電影 10–15分鐘"},
-  {id:"both",label:"⚡🎬 兩種都要",desc:"完整輸出"},
-];
-const PLATFORMS=[
-  {id:"yt_desc",icon:"▶️",label:"YT說明欄+標籤"},
-  {id:"ig_reels",icon:"📸",label:"IG Reels字幕"},
-  {id:"fb",icon:"👥",label:"FB長文2000字"},
-  {id:"threads",icon:"🧵",label:"Threads推文串"},
-  {id:"line",icon:"💬",label:"LINE社群文案"},
-  {id:"ig_carousel",icon:"🖼️",label:"IG輪播圖(5張)"},
-  {id:"yt_community",icon:"📣",label:"YT社群貼文"},
-  {id:"storyboard",icon:"🎞️",label:"分鏡腳本"},
-  {id:"long_script",icon:"🎙️",label:"長影片逐字稿"},
-];
-const THUMBNAIL_STYLES=[
-  {id:"A",label:"衝突對比型",desc:"左灰右金，強烈反差"},
-  {id:"B",label:"人物直視型",desc:"直視鏡頭，犀利眼神"},
-  {id:"C",label:"數據視覺型",desc:"超大數字，金融美學"},
-  {id:"D",label:"工具展示型",desc:"手機畫面，科技感"},
-];
-const INTERRUPT_TYPES=[
-  {id:"visual",label:"視覺反差開場"},
-  {id:"sound",label:"聲音衝擊開場"},
-  {id:"direct",label:"直接指名開場"},
-  {id:"scene",label:"場景懸疑開場"},
-  {id:"reverse",label:"反向期待開場"},
-];
-const API_PROVIDERS=[
-  {id:"claude",name:"Claude",icon:"🔮",color:"#7C3AED",model:"claude-sonnet-4-20250514",modelLabel:"Sonnet 4",placeholder:"sk-ant-api03-..."},
-  {id:"openai",name:"ChatGPT",icon:"💬",color:"#059669",model:"gpt-4o",modelLabel:"GPT-4o",placeholder:"sk-..."},
-  {id:"gemini",name:"Gemini",icon:"✨",color:"#2563EB",model:"gemini-2.0-flash",modelLabel:"2.0 Flash",placeholder:"AIzaSy..."},
-];
-const HOT_CATEGORIES=[
-  {id:"finance",icon:"💰",label:"金融・股市・地緣政治",color:"#D97706"},
-  {id:"realestate",icon:"🏠",label:"馬國・台灣房地產熱點",color:G},
-  {id:"aitools",icon:"🤖",label:"全球最新 AI 工具",color:"#2563EB"},
-];
-const FALLBACK_TOPICS={
-  finance:["升息循環對房市的影響","美元走勢與台灣房價的關係","地緣政治讓有錢人怎麼選擇買房"],
-  realestate:["台灣房市還能撐多久","馬來西亞買房比台灣划算的5個理由","預售屋爛尾怎麼保護自己"],
-  aitools:["房仲用ChatGPT寫物件文案的實際流程","AI幫我一週做完一個月的內容","用Canva AI做縮圖不用學設計"],
-};
-
-/* ── Prompt Builders ── */
-function buildSystemPrompt(form){
-  return `你是「反叛者導師」——台灣頂尖的房仲自媒體內容操盤手。使命是幫房仲業務員用短影音打造個人品牌、自動開發客戶、建立多元變現系統。核心人設：直接點名業界錯誤做法，不留情面；用數字和真實案例說話；像一個已用自媒體翻身的前輩說真話。
-語氣禁區：❌「大家好，我是XXX今天要跟大家分享」❌「非常重要」「關鍵秘訣」❌「保證成交」❌「歡迎訂閱按讚」放在開頭
-品牌錨定句（每篇至少帶入一次）：「做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。」
-主題：${form.topic}｜內容柱：${form.pillar} — ${PILLARS.find(p=>p.code===form.pillar)?.name}（痛點：${PILLARS.find(p=>p.code===form.pillar)?.pain}）｜受眾：台灣房仲業務員
-短影音：IGNITE六幕（I=Interrupt/G=Gap/N=Nightmare/I=Inversion/T=Transfer/E=Echo），每幕標注時間鏡頭。長影片：七幕電影，完整逐字稿含時間戳。FB長文：2000字+，開場25字內衝突句，每300字翻轉，結尾：「💬留言『[關鍵字]』，我讓助理把[資源]私訊給你。」繁體中文輸出。`;
-}
-function buildUserPrompt(form){
-  const parts=[`主題：${form.topic}`,`內容柱：${form.pillar}—${PILLARS.find(p=>p.code===form.pillar)?.name}`];
-  const o=[];
-  if(form.scriptType==="shorts"||form.scriptType==="both")o.push(`【短影音腳本—IGNITE六幕60秒】Interrupt手法：${INTERRUPT_TYPES.find(i=>i.id===form.interruptType)?.label||"視覺反差"}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎬IGNITE腳本（60秒）情緒弧線：驚訝→好奇→恐懼→洞察→興奮→決心\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n【I】Interrupt（0–3秒）台詞：「...」[鏡頭：...]\n【G】Gap（3–8秒）台詞：「...」[鏡頭：...]\n【N】Nightmare（8–20秒）台詞：「...」[鏡頭：...]\n【I】Inversion（20–40秒）台詞：「...」視覺隱喻：... Pattern Interrupt（第30秒）：...[鏡頭：...]\n【T】Transfer（40–52秒）台詞：「...」[鏡頭：...]\n【E】Echo（52–60秒）品牌錨定句：「...」CTA：「...」\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  if(form.scriptType==="long"||form.scriptType==="both")o.push(`【長影片腳本—七幕電影10–15分鐘】\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎬七幕電影腳本 情緒弧線：觸發→破裂→入口→深淵→翻轉→昇華→宣言\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n【幕1】觸發事件（0–1分）逐字稿：...\n【幕2】世界破裂（1–3分）逐字稿：... Pattern Interrupt（2分）：...\n【幕3】新世界入口（3–5分）核心洞察：... 逐字稿：...\n【幕4】深淵時刻（5–8分）案例故事：... 逐字稿：...\n【幕5】翻轉武器（8–11分）系統：... 步驟：...\n【幕6】昇華時刻（11–13分）逐字稿：...\n【幕7】世界觀宣言（13–15分）核心主張：... CTA：...\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  const sp=form.platforms;
-  if(sp.length>0){
-    let p=`【跨平台文案】\n`;
-    if(sp.includes("yt_desc"))p+=`📺 YT說明欄+標籤（150–300字，SEO關鍵字，15–20個hashtag三層）\n`;
-    if(sp.includes("ig_reels"))p+=`📸 IG Reels字幕（每行≤12字，關鍵詞加【】）\n`;
-    if(sp.includes("fb"))p+=`👥 FB長文（2000字+，開場≤25字衝突句，每300字翻轉，留言CTA）\n`;
-    if(sp.includes("threads"))p+=`🧵 Threads推文串（7則，每則100–200字，整串最多2個hashtag）\n`;
-    if(sp.includes("line"))p+=`💬 LINE社群文案（100–200字，口語開頭，2–4個表情）\n`;
-    if(sp.includes("ig_carousel"))p+=`🖼️ IG輪播圖（5張：封面→問題→解法A→解法B→收尾）\n`;
-    if(sp.includes("yt_community"))p+=`📣 YT社群貼文（${form.ytCommunityType||"預熱型"}，100–200字）\n`;
-    if(sp.includes("storyboard"))p+=`🎞️ 分鏡腳本（5個鏡頭，畫面描述/台詞/動作/字幕）\n`;
-    if(sp.includes("long_script"))p+=`🎙️ 長影片逐字稿（七幕含時間戳，目標完播率>45%）\n`;
-    o.push(p);
-  }
-  o.push(`【三個標題備選】\nA. 痛點點名型：「[房仲常犯錯誤]？難怪你[負面結果]」\nB. 數字具體型：「[數字]+[結果]：[方法]」\nC. 顛覆認知型：「[所有人以為A]，但頂尖房仲在做[B]」\n推薦：說明哪個最強及原因`);
-  if(form.thumbnailStyle)o.push(`【縮圖方案—風格${form.thumbnailStyle}：${THUMBNAIL_STYLES.find(t=>t.id===form.thumbnailStyle)?.label}】\n1. Midjourney完整英文提示詞（--ar 9:16 --style raw --v 6）\n2. Canva排版指引\n3. 縮圖文字建議（主標≤10字+副標≤15字）`);
-  parts.push(...o);
-  return parts.join("\n\n");
-}
-function buildHotTopicPrompt(){
-  const d=new Date().toLocaleDateString("zh-TW",{year:"numeric",month:"long",day:"numeric"});
-  return{system:`你是房仲自媒體爆款選題專家。`,user:`今天是${d}。分三類各給4個爆款選題關鍵字，要具體有衝突感。只輸出JSON：{"finance":["選題1","選題2","選題3","選題4"],"realestate":["選題1","選題2","選題3","選題4"],"aitools":["選題1","選題2","選題3","選題4"]}`};
-}
-
-/* ── API ── */
-async function streamClaude(k,sys,usr,cb){
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":k,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:8000,system:sys,messages:[{role:"user",content:usr}],stream:true})});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||`API錯誤${r.status}`);}
-  const rd=r.body.getReader();const dc=new TextDecoder();let buf="";
-  while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});const ls=buf.split("\n");buf=ls.pop();for(const l of ls){if(!l.startsWith("data: "))continue;const d=l.slice(6).trim();if(d==="[DONE]")continue;try{const j=JSON.parse(d);if(j.type==="content_block_delta"&&j.delta?.type==="text_delta")cb(j.delta.text);}catch{}}}
-}
-async function streamOpenAI(k,sys,usr,cb){
-  const r=await fetch("https://api.openai.com/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${k}`},body:JSON.stringify({model:"gpt-4o",max_tokens:8000,messages:[{role:"system",content:sys},{role:"user",content:usr}],stream:true})});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||`API錯誤${r.status}`);}
-  const rd=r.body.getReader();const dc=new TextDecoder();let buf="";
-  while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});const ls=buf.split("\n");buf=ls.pop();for(const l of ls){if(!l.startsWith("data: "))continue;const d=l.slice(6).trim();if(d==="[DONE]")continue;try{const j=JSON.parse(d);const t=j.choices?.[0]?.delta?.content;if(t)cb(t);}catch{}}}
-}
-async function streamGemini(k,sys,usr,cb){
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${k}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:[{role:"user",parts:[{text:usr}]}],generationConfig:{maxOutputTokens:8000}})});
-  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||`API錯誤${r.status}`);}
-  const rd=r.body.getReader();const dc=new TextDecoder();let buf="";
-  while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});const ls=buf.split("\n");buf=ls.pop();for(const l of ls){if(!l.startsWith("data: "))continue;const d=l.slice(6).trim();if(!d)continue;try{const j=JSON.parse(d);const t=j.candidates?.[0]?.content?.parts?.[0]?.text;if(t)cb(t);}catch{}}}
-}
-async function fetchHotTopics(prov,k){
-  const{system:sys,user:usr}=buildHotTopicPrompt();let full="";const cb=t=>{full+=t;};
-  if(prov==="claude")await streamClaude(k,sys,usr,cb);
-  else if(prov==="openai")await streamOpenAI(k,sys,usr,cb);
-  else await streamGemini(k,sys,usr,cb);
-  const m=full.match(/\{[\s\S]*\}/);if(!m)throw new Error("無法解析回應");
-  return JSON.parse(m[0]);
-}
-
-/* ── Logo (PNG with SVG fallback) ── */
-const LOGO_PNG="Green Round Simple Property Real Estate Logo (1200 x 800 \u50cf\u7d20) (500 x 500 \u50cf\u7d20) (1200 x 800 \u50cf\u7d20) (500 x 500 \u50cf\u7d20) (8).png";
-function Logo({size=48}){
-  const [useSvg,setUseSvg]=React.useState(false);
-  if(!useSvg){
-    return <img src={LOGO_PNG} width={size} height={size} alt="G UNCLE house Logo"
-      style={{borderRadius:"50%",objectFit:"cover"}}
-      onError={()=>setUseSvg(true)}/>;
-  }
-  /* SVG fallback */
-  return(
-    <svg width={size} height={size} viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FFD700"/>
-          <stop offset="35%" stopColor="#C9A227"/>
-          <stop offset="65%" stopColor="#FFD700"/>
-          <stop offset="100%" stopColor="#8B6914"/>
-        </linearGradient>
-        <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#C9A227"/>
-          <stop offset="50%" stopColor="#F5D060"/>
-          <stop offset="100%" stopColor="#C9A227"/>
-        </linearGradient>
-      </defs>
-      {/* Outer ring */}
-      <circle cx="60" cy="60" r="57" fill="#000" stroke="url(#lg1)" strokeWidth="4"/>
-      <circle cx="60" cy="60" r="51" fill="none" stroke="url(#lg1)" strokeWidth="1.5" opacity="0.4"/>
-      {/* Roof left panel */}
-      <polygon points="18,54 60,22 102,54" fill="#C9A227"/>
-      {/* Roof highlight */}
-      <polygon points="48,54 60,22 72,54" fill="#F5D060" opacity="0.8"/>
-      {/* White slash accent */}
-      <line x1="72" y1="22" x2="48" y2="54" stroke="white" strokeWidth="4" strokeLinecap="round"/>
-      {/* Window/G shape */}
-      <rect x="50" y="32" width="14" height="17" rx="7" fill="white" opacity="0.95"/>
-      {/* G letter */}
-      <text x="43" y="52" fontSize="22" fontWeight="900" fill="#000" fontFamily="Arial Black,Arial,sans-serif">G</text>
-      {/* House body */}
-      <rect x="32" y="54" width="56" height="26" fill="#0A0A0A"/>
-      {/* Gold divider line */}
-      <line x1="14" y1="80" x2="106" y2="80" stroke="url(#lg2)" strokeWidth="2"/>
-      {/* UNCLE text */}
-      <text x="60" y="76" fontSize="11" fontWeight="900" fill="white" fontFamily="Arial,sans-serif" textAnchor="middle" letterSpacing="3">UNCLE</text>
-      {/* house text */}
-      <text x="60" y="96" fontSize="14" fontWeight="900" fill="white" fontFamily="Arial,sans-serif" textAnchor="middle" letterSpacing="1">house</text>
-    </svg>
-  );
-}
-
-/* ── Manual Modal ── */
-const MANUAL=[
-  {icon:"✨",title:"第一步：免費取得 API Key（推薦 Gemini）",color:"#2563EB",steps:[
-    {label:"🆓 Gemini 完全免費",sub:"1. 前往 aistudio.google.com\n2. 登入 Google 帳號\n3. 點「Get API key」→「Create API key」\n4. 複製貼入工具",tag:"免費・無信用卡",tagColor:"#16A34A"},
-    {label:"🔮 Claude 有免費額度",sub:"1. 前往 console.anthropic.com\n2. 點左側「API Keys」→「Create Key」\n3. 立即複製（只顯示一次！）",tag:"新帳號免費",tagColor:"#7C3AED"},
-    {label:"💬 ChatGPT 需儲值$5",sub:"1. 前往 platform.openai.com\n2. 頭像 → API keys → Create new secret key\n3. 複製保存",tag:"付費",tagColor:"#DC2626"},
-  ]},
-  {icon:"🔑",title:"第二步：貼入 API Key",color:G,steps:[
-    {label:"操作步驟",sub:"1. 在工具頂部選擇你的 AI 模型\n2. 點「顯示」按鈕，貼入 Key\n3. 看到「✓ 已設定」綠色標籤 = 成功\n4. Key 只存瀏覽器記憶體，關閉分頁即消失，非常安全",tag:"安全提示",tagColor:G},
-  ]},
-  {icon:"🔥",title:"第三步：選擇主題",color:"#D97706",steps:[
-    {label:"兩種方式",sub:"① 點「🔥 AI 今日爆款選題」→「⚡ AI 立即分析」→ 點選推薦選題自動填入\n② 直接在輸入框輸入你的主題，例如：「每天發物件照沒人看」",tag:"推薦方式①",tagColor:"#D97706"},
-  ]},
-  {icon:"🎯",title:"第四步：選擇內容柱 A–H",color:"#7C3AED",steps:[
-    {label:"八大內容柱說明",sub:"A 拍攝技巧 · B 選題策略 · C 個人品牌 · D 客戶開發\nE 自媒體營運 · F 變現策略 · G AI工具 · H 海外置產",tag:"選最符合今日主題的",tagColor:"#7C3AED"},
-  ]},
-  {icon:"⚡",title:"第五步：選腳本類型",color:"#D97706",steps:[
-    {label:"三種選擇",sub:"⚡ 短影音腳本 → 60秒 Shorts / Reels / TikTok\n🎬 長影片腳本 → 10–15分鐘 YouTube\n⚡🎬 兩種都要 → 一次完整輸出",tag:"建議先選短影音",tagColor:"#D97706"},
-  ]},
-  {icon:"📱",title:"第六步：選輸出平台",color:"#2563EB",steps:[
-    {label:"平台選擇",sub:"點「全選」一次勾選所有平台，或按需選擇。\n常用組合：FB + Threads + IG Reels",tag:"可多選",tagColor:"#2563EB"},
-  ]},
-  {icon:"🚀",title:"第七步：一鍵生成！",color:G,steps:[
-    {label:"最後一步",sub:"點底部金色大按鈕 → 等待 30–90 秒\n生成完成後點各區塊右上角「複製」\n或點「下載 .txt」儲存全部內容",tag:"耐心等候，絕對值得",tagColor:G},
-  ]},
-];
-
-function ManualModal({onClose}){
-  const [step,setStep]=useState(0);
-  const s=MANUAL[step];
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:1000,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
-      <div style={{background:WH,borderRadius:16,width:"100%",maxWidth:740,maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.3)",border:`2px solid ${G}`}} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div style={{background:BK,padding:"16px 22px",display:"flex",alignItems:"center",gap:12,borderBottom:`2px solid ${G}`}}>
-          <Logo size={38}/>
-          <div>
-            <div style={{fontSize:15,fontWeight:900,color:G2}}>房叔自媒體學院｜完全新手操作手冊</div>
-            <div style={{fontSize:11,color:"#888"}}>7個步驟，從零開始一鍵出爆款</div>
-          </div>
-          <button onClick={onClose} style={{marginLeft:"auto",width:32,height:32,borderRadius:"50%",border:"1px solid #333",background:"#1a1a1a",color:"#888",cursor:"pointer",fontSize:16}}>✕</button>
-        </div>
-        <div style={{display:"flex",flex:1,overflow:"hidden"}}>
-          {/* Sidebar */}
-          <div style={{width:170,borderRight:"1px solid #eee",overflowY:"auto",padding:"10px 8px",background:"#FAFAFA"}}>
-            {MANUAL.map((m,i)=>(
-              <button key={i} onClick={()=>setStep(i)} style={{width:"100%",padding:"10px 10px",borderRadius:8,border:`1.5px solid ${step===i?m.color:"transparent"}`,background:step===i?m.color+"15":WH,cursor:"pointer",textAlign:"left",marginBottom:4,transition:"all 0.15s"}}>
-                <div style={{fontSize:16}}>{m.icon}</div>
-                <div style={{fontSize:10,fontWeight:700,color:step===i?m.color:"#666",lineHeight:1.4,marginTop:2}}>{m.title.replace(/第.步：/,"")}</div>
-              </button>
-            ))}
-          </div>
-          {/* Content */}
-          <div style={{flex:1,overflowY:"auto",padding:24}}>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-              <span style={{fontSize:26}}>{s.icon}</span>
-              <div style={{fontSize:17,fontWeight:900,color:s.color}}>{s.title}</div>
-            </div>
-            {s.steps.map((st,si)=>(
-              <div key={si} style={{background:"#F9F9F9",border:`1px solid ${s.color}30`,borderRadius:12,padding:16,marginBottom:12}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <div style={{fontSize:13,fontWeight:800,color:BK}}>{st.label}</div>
-                  <span style={{fontSize:9,padding:"2px 8px",borderRadius:10,background:st.tagColor+"20",color:st.tagColor,fontWeight:800}}>{st.tag}</span>
-                </div>
-                <div style={{fontSize:12,color:"#444",lineHeight:2,whiteSpace:"pre-line"}}>{st.sub}</div>
-              </div>
-            ))}
-            <div style={{display:"flex",gap:10,marginTop:20,paddingTop:16,borderTop:"1px solid #eee"}}>
-              {step>0&&<button onClick={()=>setStep(s=>s-1)} style={{flex:1,padding:10,borderRadius:8,border:"1.5px solid #ddd",background:WH,color:"#666",cursor:"pointer",fontSize:13,fontWeight:700}}>← 上一步</button>}
-              {step<MANUAL.length-1
-                ?<button onClick={()=>setStep(s=>s+1)} style={{flex:1,padding:10,borderRadius:8,border:"none",background:s.color,color:WH,cursor:"pointer",fontSize:13,fontWeight:800}}>下一步 →</button>
-                :<button onClick={onClose} style={{flex:1,padding:10,borderRadius:8,border:"none",background:`linear-gradient(135deg,${G},${G2})`,color:BK,cursor:"pointer",fontSize:13,fontWeight:900}}>🚀 開始使用！</button>}
-            </div>
-          </div>
-        </div>
+  <header>
+    <div class="brand">
+      <img src="logo-uncle-house.jpg" alt="Uncle House Logo" />
+      <div>
+        <h1>房叔 AI 提示詞生成器</h1>
+        <div class="sub">最簡單版：輸入 API Key → 輸入主題 → 一鍵生成</div>
       </div>
     </div>
-  );
-}
+  </header>
 
-/* ── Hot Topics ── */
-function HotTopicsPanel({onSelect,apiKey,prov}){
-  const [open,setOpen]=useState(false);
-  const [loading,setLoading]=useState(false);
-  const [topics,setTopics]=useState(null);
-  const [err,setErr]=useState("");
-  const fetch_=async()=>{
-    if(!apiKey?.trim()){setErr("請先輸入 API Key");return;}
-    setLoading(true);setErr("");setTopics(null);
-    try{const d=await fetchHotTopics(prov,apiKey);setTopics(d);}
-    catch(e){setErr("推薦失敗："+e.message);setTopics(FALLBACK_TOPICS);}
-    finally{setLoading(false);}
-  };
-  return(
-    <div style={{marginTop:8}}>
-      <button onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",borderRadius:8,border:`1.5px solid ${open?G:"#DDD"}`,background:open?"#FFF8E1":WH,cursor:"pointer",transition:"all 0.2s"}}>
-        <span>🔥</span>
-        <span style={{fontSize:12,fontWeight:700,color:open?G:"#555"}}>AI 今日爆款選題</span>
-        <span style={{marginLeft:"auto",fontSize:10,color:G,fontWeight:700}}>{open?"▲ 收起":"▼ 展開"}</span>
-      </button>
-      {open&&(
-        <div className="fade-in" style={{border:`1.5px solid ${G}50`,borderTop:"none",borderRadius:"0 0 8px 8px",background:"#FFFDF5",padding:14}}>
-          <button onClick={fetch_} disabled={loading} style={{width:"100%",padding:"9px 14px",borderRadius:8,border:`1.5px solid ${G}`,background:loading?"#F5F5F5":`linear-gradient(135deg,${G},${G2})`,color:loading?"#999":BK,cursor:loading?"not-allowed":"pointer",fontSize:12,fontWeight:800,marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            {loading?<><span style={{display:"inline-block",width:12,height:12,border:`2px solid ${G}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin .8s linear infinite"}}/> AI 分析今日熱點中...</>:"⚡ AI 立即分析今日爆款選題"}
-          </button>
-          {err&&!topics&&<div style={{fontSize:11,color:"#DC2626",marginBottom:10,padding:"6px 10px",background:"#FEF2F2",borderRadius:6}}>⚠️ {err}</div>}
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {HOT_CATEGORIES.map(cat=>(
-              <div key={cat.id}>
-                <div style={{fontSize:10,fontWeight:800,color:cat.color,marginBottom:6,letterSpacing:.5}}>{cat.icon} {cat.label}</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {(topics?topics[cat.id]:FALLBACK_TOPICS[cat.id])?.map((t,i)=>(
-                    <button key={i} onClick={()=>{onSelect(t);setOpen(false);}} style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${cat.color}50`,background:cat.color+"10",color:"#333",cursor:"pointer",fontSize:11,fontWeight:600,transition:"all 0.15s"}}
-                      onMouseEnter={e=>{e.target.style.borderColor=cat.color;e.target.style.background=cat.color+"20";e.target.style.color=cat.color;}}
-                      onMouseLeave={e=>{e.target.style.borderColor=cat.color+"50";e.target.style.background=cat.color+"10";e.target.style.color="#333";}}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {!topics&&<div style={{fontSize:10,color:"#BBB",textAlign:"center"}}>↑ 點上方按鈕讓 AI 分析今日最新爆款</div>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+  <main>
+    <section class="box">
+      <div class="model">固定模型：gpt-5.6-terra</div>
+      <p class="hint">API Key 只存在目前瀏覽器分頁，不會寫入 GitHub。關閉或重新整理後需重新貼入。不要把 Key 貼到公開留言或公開檔案。</p>
+    </section>
 
-/* ── Small components ── */
-function Label({children}){
-  return<div style={{fontSize:11,fontWeight:800,color:BK,letterSpacing:.8,textTransform:"uppercase",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-    <span style={{display:"inline-block",width:3,height:13,background:G,borderRadius:2}}/>
-    {children}
-  </div>;
-}
-function CopyBtn({text}){
-  const [c,setC]=useState(false);
-  return<button onClick={()=>{navigator.clipboard.writeText(text);setC(true);setTimeout(()=>setC(false),2000);}} style={{padding:"5px 12px",borderRadius:6,border:`1px solid ${c?"#16A34A60":"#DDD"}`,background:c?"#F0FDF4":WH,color:c?"#16A34A":"#555",fontSize:11,cursor:"pointer",fontWeight:700,transition:"all .2s"}}>{c?"✓ 已複製":"複製"}</button>;
-}
-
-/* ── API Selector ── */
-function ApiSelector({sel,keys,onSel,onChange}){
-  const [show,setShow]=useState(false);
-  const prov=API_PROVIDERS.find(p=>p.id===sel);
-  return(
-    <div style={{marginBottom:20}}>
-      <Label>⓪ 選擇 AI 模型</Label>
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        {API_PROVIDERS.map(p=>(
-          <button key={p.id} onClick={()=>onSel(p.id)} style={{flex:1,padding:"10px 6px",borderRadius:10,border:`2px solid ${sel===p.id?G:"#E0E0E0"}`,background:sel===p.id?"#FFF8E1":WH,cursor:"pointer",textAlign:"center",transition:"all .15s"}}>
-            <div style={{fontSize:18,marginBottom:2}}>{p.icon}</div>
-            <div style={{fontSize:11,fontWeight:800,color:sel===p.id?G:"#666"}}>{p.name}</div>
-            <div style={{fontSize:9,color:"#AAA",marginTop:1}}>{p.modelLabel}</div>
-          </button>
-        ))}
+    <section class="box">
+      <label for="apiKey">OpenAI API Key</label>
+      <input id="apiKey" type="password" placeholder="sk-proj-..." autocomplete="off" />
+      <div class="actions" style="margin-top:10px">
+        <button class="ghost" id="toggleKey" type="button">顯示 / 隱藏 Key</button>
+        <button class="ghost" id="clearKey" type="button">清除 Key</button>
       </div>
-      <div style={{background:"#FAFAFA",border:"1.5px solid #E0E0E0",borderRadius:10,padding:12}}>
-        <div style={{fontSize:10,color:"#666",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-          {prov?.name} API Key
-          <span style={{fontSize:9,padding:"1px 7px",borderRadius:10,background:keys[sel]?"#DCFCE7":"#FEF2F2",color:keys[sel]?"#16A34A":"#DC2626",fontWeight:800}}>
-            {keys[sel]?"✓ 已設定":"未設定"}
-          </span>
+    </section>
+
+    <section class="box">
+      <label for="topic">主題</label>
+      <textarea id="topic" placeholder="例：每天發物件照沒人看、AI 工具幫房仲省時間、馬來西亞置產怎麼跟客戶說"></textarea>
+      <div class="grid" style="margin-top:12px">
+        <div>
+          <label for="pillar">內容方向</label>
+          <select id="pillar">
+            <option>客戶開發</option>
+            <option>短影音拍攝技巧</option>
+            <option>選題策略</option>
+            <option>個人品牌建立</option>
+            <option>自媒體營運</option>
+            <option>變現策略</option>
+            <option>AI內容工具</option>
+            <option>海外置產觀察</option>
+          </select>
         </div>
-        <div style={{display:"flex",gap:6}}>
-          <input type={show?"text":"password"} value={keys[sel]||""} onChange={e=>onChange(sel,e.target.value)} placeholder={prov?.placeholder} style={{flex:1,background:WH,border:`1.5px solid ${keys[sel]?G:"#DDD"}`,borderRadius:8,color:BK,fontSize:12,padding:"8px 12px",fontFamily:"monospace"}}/>
-          <button onClick={()=>setShow(s=>!s)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #DDD",background:WH,color:"#666",cursor:"pointer",fontSize:11}}>{show?"隱藏":"顯示"}</button>
+        <div>
+          <label for="format">輸出格式</label>
+          <select id="format">
+            <option>短影音腳本 + FB + Threads + V3圖片提示詞</option>
+            <option>只要短影音腳本</option>
+            <option>只要FB長文</option>
+            <option>只要V3圖片提示詞</option>
+            <option>全部完整輸出</option>
+          </select>
         </div>
-        <div style={{fontSize:10,color:"#BBB",marginTop:5}}>🔒 Key 僅存於瀏覽器記憶體，不會上傳任何伺服器</div>
       </div>
-    </div>
-  );
-}
+      <div id="error"></div>
+    </section>
 
-/* ── Main App ── */
-function App(){
-  const [form,setForm]=useState({topic:"",pillar:"D",scriptType:"shorts",interruptType:"direct",platforms:["fb","threads","ig_reels"],thumbnailStyle:"B",ytCommunityType:"預熱型"});
-  const [selProv,setSelProv]=useState("claude");
-  const [keys,setKeys]=useState({claude:"",openai:"",gemini:""});
-  const [gen,setGen]=useState(false);
-  const [result,setResult]=useState("");
-  const [err,setErr]=useState("");
-  const [step,setStep]=useState(1);
-  const [manual,setManual]=useState(false);
-  const resultRef=useRef(null);
-  const ap=API_PROVIDERS.find(p=>p.id===selProv);
-  const togglePlat=id=>setForm(f=>({...f,platforms:f.platforms.includes(id)?f.platforms.filter(p=>p!==id):[...f.platforms,id]}));
-
-  const generate=async()=>{
-    if(!form.topic.trim()){setErr("請先輸入主題或選題關鍵字");return;}
-    if(!keys[selProv]?.trim()){setErr(`請先輸入 ${ap?.name} API Key`);return;}
-    setErr("");setGen(true);setResult("");setStep(2);
-    try{
-      const cb=t=>setResult(r=>r+t);
-      const sp=buildSystemPrompt(form),up=buildUserPrompt(form);
-      if(selProv==="claude")await streamClaude(keys.claude,sp,up,cb);
-      else if(selProv==="openai")await streamOpenAI(keys.openai,sp,up,cb);
-      else await streamGemini(keys.gemini,sp,up,cb);
-      setStep(3);
-    }catch(e){setErr("生成失敗："+e.message);setStep(1);}
-    finally{setGen(false);}
-  };
-  useEffect(()=>{if(step===3&&resultRef.current)resultRef.current.scrollIntoView({behavior:"smooth"});},[step]);
-  const sections=result?result.split(/(?=━━━|【短影音|【長影片|【跨平台|【三個標題|【縮圖方案)/).filter(Boolean):[];
-
-  return(
-    <div style={{fontFamily:"'Noto Sans TC','PingFang TC',sans-serif",background:GR,minHeight:"100vh",color:BK}}>
-      {manual&&<ManualModal onClose={()=>setManual(false)}/>}
-
-      {/* ── TOP NAV ── */}
-      <nav style={{background:BK,borderBottom:`3px solid ${G}`,padding:"0 28px",display:"flex",alignItems:"center",gap:0,height:58,position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,0.3)"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginRight:28}}>
-          <Logo size={40}/>
-          <div>
-            <div style={{fontSize:14,fontWeight:900,color:G2,letterSpacing:"-.2px"}}>房叔自媒體學院</div>
-            <div style={{fontSize:9,color:"#888",letterSpacing:.5}}>G UNCLE HOUSE · MEDIA ACADEMY</div>
-          </div>
-        </div>
-        <div style={{width:1,height:32,background:"#333",margin:"0 16px"}}/>
-        <div style={{fontSize:12,fontWeight:700,color:"#BBB"}}>AI 提示詞生成器</div>
-        <div style={{flex:1}}/>
-        <button onClick={()=>setManual(true)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 16px",borderRadius:6,border:`1.5px solid ${G}`,background:"transparent",color:G2,cursor:"pointer",fontSize:12,fontWeight:800,marginRight:12}}>
-          📖 使用說明
-        </button>
-        <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:20,background:"#1A1A1A",border:`1px solid ${G}40`}}>
-          <span style={{fontSize:13}}>{ap?.icon}</span>
-          <span style={{fontSize:11,fontWeight:800,color:G2}}>{ap?.name}</span>
-          <span style={{fontSize:9,color:"#888"}}>{ap?.modelLabel}</span>
-        </div>
-        {step===3&&<button onClick={()=>{setStep(1);setResult("");}} style={{marginLeft:10,padding:"7px 14px",borderRadius:6,border:"1px solid #333",background:"#1A1A1A",color:"#AAA",fontSize:11,cursor:"pointer",fontWeight:700}}>← 重新設定</button>}
-      </nav>
-
-      {/* ── HERO ── */}
-      {step===1&&(
-        <div style={{background:BK,borderBottom:`3px solid ${G}`,position:"relative",overflow:"hidden"}}>
-          {/* Actual banner image — full width */}
-          <img
-            src="628025252_1523495426446644_5568471531379815870_n.jpg"
-            alt="房叔自媒體行銷學院 UNCLE HOUSE"
-            style={{width:"100%",maxHeight:320,objectFit:"cover",objectPosition:"center top",display:"block"}}
-            onError={e=>{
-              // Fallback if image not found: show text hero
-              e.target.style.display="none";
-              document.getElementById("hero-fallback").style.display="flex";
-            }}
-          />
-          {/* Fallback hero (hidden by default, shown if image fails to load) */}
-          <div id="hero-fallback" style={{display:"none",background:BK,padding:"0 28px",position:"relative"}}>
-            <div style={{position:"absolute",top:8,left:8,right:8,bottom:8,border:`1px solid ${G}40`,borderRadius:4,pointerEvents:"none"}}/>
-            <div style={{maxWidth:1000,margin:"0 auto",display:"flex",alignItems:"center",minHeight:160,position:"relative",zIndex:1}}>
-              <div style={{flex:1,padding:"32px 0"}}>
-                <div style={{fontSize:9,letterSpacing:4,color:G,fontWeight:800,marginBottom:8}}>BRAND STORY · 品牌故事 由你來說！</div>
-                <div style={{fontSize:40,fontWeight:900,color:WH,lineHeight:1.1,marginBottom:8,letterSpacing:-1}}>
-                  UNCLE<span style={{color:G2}}> HOUSE</span>
-                </div>
-                <div style={{fontSize:13,color:"#AAA",lineHeight:1.6}}>房叔自媒體行銷學院 ｜ INVESTMENT PROPOSAL 2026</div>
-              </div>
-            </div>
-          </div>
-          {/* Gold overlay bar at bottom */}
-          <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg,transparent,${G},${G2},${G},transparent)`}}/>
-        </div>
-      )}
-
-      {/* ── BREADCRUMB ── */}
-      <div style={{background:"#F0F0F0",borderBottom:"1px solid #E0E0E0",padding:"8px 28px",display:"flex",alignItems:"center",gap:8}}>
-        <span style={{fontSize:11,color:"#999"}}>🏠 房叔自媒體學院</span>
-        <span style={{color:"#CCC"}}>›</span>
-        <span style={{fontSize:11,color:G,fontWeight:700}}>AI 提示詞生成器</span>
-        {step===3&&<><span style={{color:"#CCC"}}>›</span><span style={{fontSize:11,color:"#999"}}>生成結果</span></>}
+    <section class="box">
+      <div class="actions">
+        <button class="primary" id="generate" type="button">用 GPT API 生成</button>
+        <button class="secondary" id="copy" type="button">複製結果</button>
+        <button class="ghost" id="download" type="button">下載 .txt</button>
       </div>
+      <div class="ok" style="margin-top:12px">圖片提示詞固定輸出為「V3 圖片生成模型」格式，包含繁中 Prompt、English Prompt、Negative Prompt、Canva 排版與 V3 檢查。</div>
+      <pre id="result">生成結果會出現在這裡。</pre>
+    </section>
+  </main>
 
-      {/* ── MAIN CONTENT ── */}
-      <div style={{display:"flex",maxWidth:step===3?"100%":1000,margin:"0 auto",minHeight:"calc(100vh - 145px)"}}>
+  <script>
+    const GPT_MODEL = "gpt-5.6-terra";
+    const IMAGE_MODEL = "V3 圖片生成模型";
+    const $ = id => document.getElementById(id);
 
-        {/* ── LEFT PANEL ── */}
-        <div style={{
-          width:step===3?360:"100%",maxWidth:step===3?360:680,
-          margin:step===3?0:"0 auto",
-          padding:"24px 24px",
-          borderRight:step===3?"1px solid #E0E0E0":"none",
-          overflowY:"auto",background:WH,
-          flexShrink:0,transition:"all .3s"
-        }}>
+    $("toggleKey").onclick = () => {
+      $("apiKey").type = $("apiKey").type === "password" ? "text" : "password";
+    };
+    $("clearKey").onclick = () => {
+      $("apiKey").value = "";
+    };
 
-          {/* Section title */}
-          <div style={{background:"#FFFDF5",border:`1.5px solid ${G}40`,borderRadius:10,padding:"12px 16px",marginBottom:20,display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:4,height:36,background:`linear-gradient(180deg,${G},${G2})`,borderRadius:2}}/>
-            <div>
-              <div style={{fontSize:14,fontWeight:900,color:BK}}>AI 內容提示詞生成器</div>
-              <div style={{fontSize:11,color:"#888"}}>選好設定，一鍵生成所有平台完整內容</div>
-            </div>
-          </div>
+    function systemPrompt() {
+      return `你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。`;
+    }
 
-          <ApiSelector sel={selProv} keys={keys} onSel={setSelProv} onChange={(p,v)=>setKeys(k=>({...k,[p]:v}))}/>
+    function userPrompt() {
+      return `請依照以下條件產出內容：
 
-          <div style={{borderTop:"1px solid #F0F0F0",marginBottom:20}}/>
+主題：${$("topic").value.trim()}
+內容方向：${$("pillar").value}
+輸出格式：${$("format").value}
 
-          {/* ① Topic */}
-          <div style={{marginBottom:20}}>
-            <Label>① 輸入主題或選題關鍵字</Label>
-            <textarea value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
-              placeholder="例：每天發物件照沒人看、AI工具幫房仲省時間、做房仲5年沒有主動詢問..."
-              style={{width:"100%",minHeight:80,background:WH,border:"1.5px solid #DDD",borderRadius:10,color:BK,fontSize:13,padding:"12px 14px",resize:"vertical",lineHeight:1.7,boxSizing:"border-box"}}
-            />
-            {err&&<div style={{fontSize:11,color:"#DC2626",marginTop:6,padding:"6px 10px",background:"#FEF2F2",borderRadius:6,border:"1px solid #FECACA"}}>⚠️ {err}</div>}
-            <HotTopicsPanel onSelect={t=>setForm(f=>({...f,topic:t}))} apiKey={keys[selProv]} prov={selProv}/>
-          </div>
+請包含：
+1. 3個爆款標題
+2. 60秒短影音腳本，使用 Hook / Problem / Insight / Action / CTA
+3. FB貼文版本，開頭25字內要有衝突感
+4. Threads 5則推文串
+5. CTA與留言關鍵字
+6. ${IMAGE_MODEL} 提示詞：
+   - 主圖 Prompt（繁中）
+   - Main Prompt（English）
+   - Negative Prompt
+   - Canva 排版指引
+   - V3 檢查：Apple / Netflix / Luxury / Documentary / Human，避免 Fake Guru / Overhype / Clickbait / Hard Sell
 
-          {/* ② Pillar */}
-          <div style={{marginBottom:20}}>
-            <Label>② 選擇內容柱</Label>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {PILLARS.map(p=>(
-                <button key={p.code} onClick={()=>setForm(f=>({...f,pillar:p.code}))} style={{textAlign:"left",padding:"10px 12px",borderRadius:10,border:`1.5px solid ${form.pillar===p.code?G:"#E0E0E0"}`,background:form.pillar===p.code?"#FFF8E1":WH,cursor:"pointer",transition:"all .15s"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                    <span style={{fontSize:12,fontWeight:900,color:form.pillar===p.code?G:"#AAA",background:form.pillar===p.code?G+"20":"#F5F5F5",width:20,height:20,borderRadius:4,display:"flex",alignItems:"center",justifyContent:"center"}}>{p.code}</span>
-                    <span style={{fontSize:11,fontWeight:700,color:form.pillar===p.code?BK:"#555"}}>{p.name}</span>
-                  </div>
-                  <div style={{fontSize:10,color:"#AAA",lineHeight:1.4}}>{p.pain}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+請讓內容適合台灣房仲、馬來西亞置產客戶、高收入家庭與個人品牌新手。`;
+    }
 
-          {/* ③ Script Type */}
-          <div style={{marginBottom:20}}>
-            <Label>③ 腳本類型</Label>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}}>
-              {SCRIPT_TYPES.map(s=>(
-                <button key={s.id} onClick={()=>setForm(f=>({...f,scriptType:s.id}))} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${form.scriptType===s.id?G:"#E0E0E0"}`,background:form.scriptType===s.id?"#FFF8E1":WH,cursor:"pointer",transition:"all .15s"}}>
-                  <div style={{fontSize:12,fontWeight:800,color:form.scriptType===s.id?G:"#555"}}>{s.label}</div>
-                  <div style={{fontSize:10,color:"#AAA"}}>{s.desc}</div>
-                </button>
-              ))}
-            </div>
-            {(form.scriptType==="shorts"||form.scriptType==="both")&&(
-              <div style={{background:"#FAFAFA",border:"1px solid #EEE",borderRadius:8,padding:10}}>
-                <div style={{fontSize:10,color:"#888",marginBottom:6,fontWeight:700}}>開場 Interrupt 手法</div>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {INTERRUPT_TYPES.map(t=>(
-                    <button key={t.id} onClick={()=>setForm(f=>({...f,interruptType:t.id}))} style={{padding:"4px 10px",borderRadius:20,border:`1.5px solid ${form.interruptType===t.id?G:"#DDD"}`,background:form.interruptType===t.id?"#FFF8E1":WH,color:form.interruptType===t.id?G:"#555",cursor:"pointer",fontSize:11,fontWeight:600}}>{t.label}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+    async function streamGPT(apiKey, onText) {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: GPT_MODEL,
+          max_completion_tokens: 8000,
+          stream: true,
+          messages: [
+            { role: "system", content: systemPrompt() },
+            { role: "user", content: userPrompt() }
+          ]
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error?.message || `OpenAI API 錯誤 ${res.status}`);
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const json = JSON.parse(data);
+            const text = json.choices?.[0]?.delta?.content;
+            if (text) onText(text);
+          } catch {}
+        }
+      }
+    }
 
-          {/* ④ Platforms */}
-          <div style={{marginBottom:20}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-              <Label>④ 選擇輸出平台</Label>
-              <div style={{display:"flex",gap:10,marginBottom:8}}>
-                <button onClick={()=>setForm(f=>({...f,platforms:PLATFORMS.map(p=>p.id)}))} style={{fontSize:11,color:G,background:"none",border:"none",cursor:"pointer",fontWeight:800}}>全選</button>
-                <button onClick={()=>setForm(f=>({...f,platforms:[]}))} style={{fontSize:11,color:"#AAA",background:"none",border:"none",cursor:"pointer"}}>清除</button>
-              </div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-              {PLATFORMS.map(p=>(
-                <button key={p.id} onClick={()=>togglePlat(p.id)} style={{padding:"8px 10px",borderRadius:8,border:`1.5px solid ${form.platforms.includes(p.id)?G:"#E0E0E0"}`,background:form.platforms.includes(p.id)?"#FFF8E1":WH,cursor:"pointer",transition:"all .15s",textAlign:"left"}}>
-                  <div style={{fontSize:14,marginBottom:2}}>{p.icon}</div>
-                  <div style={{fontSize:10,color:form.platforms.includes(p.id)?G:"#888",fontWeight:600,lineHeight:1.3}}>{p.label}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+    $("generate").onclick = async () => {
+      const apiKey = $("apiKey").value.trim();
+      const topic = $("topic").value.trim();
+      $("error").innerHTML = "";
+      if (!apiKey) return showError("請先貼上 OpenAI API Key。");
+      if (!topic) return showError("請先輸入主題。");
+      $("generate").disabled = true;
+      $("result").textContent = "";
+      try {
+        await streamGPT(apiKey, text => $("result").textContent += text);
+      } catch (e) {
+        showError("生成失敗：" + e.message);
+      } finally {
+        $("generate").disabled = false;
+      }
+    };
 
-          {/* ⑤ Thumbnail */}
-          <div style={{marginBottom:24}}>
-            <Label>⑤ 縮圖風格（可不選）</Label>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-              {THUMBNAIL_STYLES.map(t=>(
-                <button key={t.id} onClick={()=>setForm(f=>({...f,thumbnailStyle:f.thumbnailStyle===t.id?"":t.id}))} style={{padding:"10px 12px",borderRadius:9,border:`1.5px solid ${form.thumbnailStyle===t.id?G:"#E0E0E0"}`,background:form.thumbnailStyle===t.id?"#FFF8E1":WH,cursor:"pointer",textAlign:"left",transition:"all .15s"}}>
-                  <div style={{fontSize:12,fontWeight:900,color:form.thumbnailStyle===t.id?G:"#AAA",marginBottom:2}}>{t.id}</div>
-                  <div style={{fontSize:11,fontWeight:700,color:form.thumbnailStyle===t.id?BK:"#555"}}>{t.label}</div>
-                  <div style={{fontSize:10,color:"#AAA"}}>{t.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+    $("copy").onclick = async () => {
+      await navigator.clipboard.writeText($("result").textContent);
+      $("copy").textContent = "已複製";
+      setTimeout(() => $("copy").textContent = "複製結果", 1200);
+    };
 
-          {/* Generate Button */}
-          <button onClick={generate} disabled={gen} style={{
-            width:"100%",padding:"15px",borderRadius:12,
-            border:gen?"1.5px solid #DDD":`2px solid ${G}`,
-            cursor:gen?"not-allowed":"pointer",fontSize:14,fontWeight:900,
-            background:gen?"#F5F5F5":`linear-gradient(135deg,${G} 0%,${G2} 50%,${G} 100%)`,
-            color:gen?"#AAA":BK,transition:"all .2s",letterSpacing:.2,
-            boxShadow:gen?"none":`0 4px 20px ${G}40`
-          }}>
-            {gen?`⏳ ${ap?.icon} 正在生成中...`:`🚀 用 ${ap?.name} 一鍵生成所有提示詞`}
-          </button>
-          {gen&&<div style={{marginTop:10,fontSize:11,color:"#AAA",textAlign:"center",lineHeight:1.7,animation:"pulse 1.5s ease infinite"}}>
-            {ap?.name} 生成中，依選擇平台數量約需 30–90 秒，請稍候...
-          </div>}
+    $("download").onclick = () => {
+      const blob = new Blob([$("result").textContent], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "房叔AI提示詞.txt";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
 
-          {/* Footer */}
-          <div style={{marginTop:24,paddingTop:16,borderTop:"1px solid #F0F0F0",display:"flex",alignItems:"center",gap:8}}>
-            <Logo size={24}/>
-            <div style={{fontSize:10,color:"#CCC"}}>房叔自媒體學院 © 2026 · G UNCLE house</div>
-          </div>
-        </div>
-
-        {/* ── RIGHT PANEL (Result) ── */}
-        {(step===2||step===3)&&(
-          <div ref={resultRef} style={{flex:1,padding:"24px 28px",overflowY:"auto",background:"#FAFAFA"}} className="fade-in">
-
-            {step===2&&!result&&(
-              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16}}>
-                <div style={{width:56,height:56,border:`3px solid ${G}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-                <div style={{fontSize:14,color:"#888",textAlign:"center",lineHeight:1.8}}>
-                  {ap?.icon} {ap?.name} 正在生成<br/>
-                  <span style={{color:G,fontWeight:800}}>{PILLARS.find(p=>p.code===form.pillar)?.name}</span> 的完整內容...
-                </div>
-              </div>
-            )}
-
-            {result&&(
-              <div>
-                {/* Result Header */}
-                <div style={{background:BK,borderRadius:10,padding:"12px 18px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",border:`1.5px solid ${G}`}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:13,fontWeight:800,color:G2}}>✅ 生成完成 — 柱{form.pillar} · {PILLARS.find(p=>p.code===form.pillar)?.name}</span>
-                    <span style={{fontSize:10,padding:"2px 8px",borderRadius:10,background:G+"30",color:G2,fontWeight:700,border:`1px solid ${G}50`}}>{ap?.icon} {ap?.name}</span>
-                  </div>
-                  <div style={{display:"flex",gap:8}}>
-                    <CopyBtn text={result}/>
-                    <button onClick={()=>{const b=new Blob([result],{type:"text/plain;charset=utf-8"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`提示詞_${form.topic.slice(0,10)}.txt`;a.click();}} style={{padding:"5px 12px",borderRadius:6,border:"1px solid #333",background:"#1A1A1A",color:"#AAA",fontSize:11,cursor:"pointer",fontWeight:700}}>下載 .txt</button>
-                  </div>
-                </div>
-
-                {sections.length>1?sections.map((sec,i)=>{
-                  const isScript=sec.includes("IGNITE")||sec.includes("七幕");
-                  const isFB=sec.includes("Facebook")||sec.includes("FB");
-                  const isTitle=sec.includes("標題備選");
-                  const isThumbnail=sec.includes("縮圖方案");
-                  const isPlatform=sec.includes("跨平台");
-                  const bc=isScript?"#7C3AED":isFB?"#D97706":isTitle?"#2563EB":isThumbnail?"#16A34A":G;
-                  return(
-                    <div key={i} style={{marginBottom:14,background:WH,borderRadius:12,border:`1px solid ${bc}30`,overflow:"hidden",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-                      <div style={{padding:"9px 16px",background:bc+"10",borderBottom:`2px solid ${bc}20`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{width:3,height:14,background:bc,borderRadius:2}}/>
-                          <span style={{fontSize:12,fontWeight:800,color:bc}}>{isScript?"🎬 腳本":isFB?"👥 FB長文":isTitle?"📌 標題":isThumbnail?"🎨 縮圖":isPlatform?"📣 跨平台":`區塊 ${i+1}`}</span>
-                        </div>
-                        <CopyBtn text={sec}/>
-                      </div>
-                      <pre style={{padding:"14px 16px",margin:0,fontSize:13,lineHeight:2,color:"#1A1A1A",whiteSpace:"pre-wrap",wordBreak:"break-word",fontFamily:"'Noto Sans TC','PingFang TC',monospace"}}>{sec.trim()}</pre>
-                    </div>
-                  );
-                }):(
-                  <div style={{background:WH,borderRadius:12,border:"1px solid #E0E0E0",padding:20,boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-                    <pre style={{margin:0,fontSize:13,lineHeight:2,color:"#1A1A1A",whiteSpace:"pre-wrap",wordBreak:"break-word",fontFamily:"'Noto Sans TC',monospace"}}>{result}</pre>
-                  </div>
-                )}
-
-                {/* Warning */}
-                <div style={{marginTop:20,background:"#FFF8E1",borderRadius:10,padding:"14px 18px",border:`1px solid ${G}50`}}>
-                  <div style={{fontSize:11,fontWeight:800,color:G,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{display:"inline-block",width:3,height:13,background:G,borderRadius:2}}/>⚠️ 使用前必確認
-                  </div>
-                  {["所有具體數字（房市統計、政策條件）請自行查詢最新來源核實","腳本中的案例故事如涉及真實客戶，發布前需取得同意或匿名處理","FB長文的留言關鍵字請設計成與主題直接相關的 2–4 字短詞","縮圖 Midjourney 提示詞建議先跑 2–4 張，選最有衝擊力的版本"].map((t,i)=>(
-                    <div key={i} style={{fontSize:11,color:"#555",marginBottom:4,paddingLeft:12,borderLeft:`2px solid ${G}60`,lineHeight:1.7}}>{t}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
+    function showError(message) {
+      $("error").innerHTML = `<div class="error">${message}</div>`;
+    }
+  </script>
 </body>
 </html>
