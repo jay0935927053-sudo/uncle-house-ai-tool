@@ -71,6 +71,18 @@
       </div>
       <div class="grid" style="margin-top:12px">
         <div>
+          <label for="overseasTopic">海外資產主題</label>
+          <select id="overseasTopic"></select>
+          <div class="hint">選擇後會自動帶入主題，並切換為海外置產內容方向。</div>
+        </div>
+        <div>
+          <label for="overseasScenario">海外資產情境</label>
+          <select id="overseasScenario"></select>
+          <div class="hint">依客戶目前的需求、疑慮或人生階段生成更貼近實務的內容。</div>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div>
           <label for="pillar">內容方向</label>
           <select id="pillar">
             <option>客戶開發</option>
@@ -130,7 +142,7 @@
       "自媒體經營": ["個人定位", "內容企劃", "IP人設", "粉絲互動", "私域轉化"],
       "短影音拍攝教學": ["開場Hook", "鏡頭語言", "口播腳本", "剪輯節奏", "完播率優化"],
       "AI內容工具": ["腳本生成", "分鏡生成", "字幕優化", "標題封面", "內容再利用"],
-      "海外置產投資": ["區域分析", "現金流模型", "風險控管", "稅務觀念", "跨境成交流程"]
+      "海外置產投資": ["跨境資產配置", "馬來西亞區域分析", "海外房產現金流", "匯率與融資", "稅務與持有成本", "建商與產權查核", "出租代管", "退出與轉售", "子女教育規劃", "退休第二居所", "家族資產傳承", "跨境成交流程"]
     };
     const TOPIC_CONTENT_GROUPS = [
       {
@@ -215,7 +227,76 @@
           "為什麼有些房仲永遠不缺客戶",
           "你以為客戶在比價格其實不是"
         ]
+      },
+      {
+        category: "海外資產配置",
+        topics: [
+          "台灣資產過度集中怎麼分散風險",
+          "高收入家庭為什麼需要跨境資產配置",
+          "海外房產如何成為家庭第二資產",
+          "台幣資產與外幣資產應該怎麼分配",
+          "海外置產是投資還是生活備援",
+          "退休現金流如何用海外不動產規劃"
+        ]
+      },
+      {
+        category: "馬來西亞置產",
+        topics: [
+          "吉隆坡房產適合哪些台灣家庭",
+          "KLCC核心區與新興區應該怎麼選",
+          "馬來西亞永久產權與租賃產權差在哪",
+          "海外收租應該看租金報酬還是增值空間",
+          "馬來西亞新成屋預售屋二手屋怎麼選",
+          "馬來西亞置產完整流程與常見費用"
+        ]
+      },
+      {
+        category: "海外投資風險",
+        topics: [
+          "匯率波動會如何影響海外房產報酬",
+          "海外房產稅務與持有成本怎麼估算",
+          "海外建商與產權風險怎麼查核",
+          "海外出租代管最常遇到哪些問題",
+          "海外房產退出與轉售要先看什麼",
+          "全額付款與海外貸款應該怎麼選"
+        ]
+      },
+      {
+        category: "國際生活規劃",
+        topics: [
+          "為子女留學提前準備海外住所值得嗎",
+          "退休後擁有海外第二居所的真實成本",
+          "移居前應該先租房還是先買房",
+          "家庭如何一起討論海外置產決策",
+          "企業主如何規劃跨境資產與生活備援",
+          "海外房產如何納入家族傳承規劃"
+        ]
       }
+    ];
+    const OVERSEAS_TOPIC_GROUPS = TOPIC_CONTENT_GROUPS.filter(group => [
+      "海外資產配置",
+      "馬來西亞置產",
+      "海外投資風險",
+      "國際生活規劃"
+    ].includes(group.category));
+    const OVERSEAS_SCENARIOS = [
+      "不指定情境",
+      "第一次了解海外置產，但擔心資訊不透明",
+      "台灣房產比重過高，想分散單一市場風險",
+      "高收入家庭想建立第二資產與外幣現金流",
+      "準備退休，想規劃海外第二居所",
+      "為子女留學與未來居住提前準備",
+      "想在吉隆坡買房收租，但不熟悉區域",
+      "看過很多海外建案，卻不知道怎麼比較",
+      "擔心建商、產權、爛尾或交屋風險",
+      "想比較台灣與馬來西亞房產的差異",
+      "擔心匯率變動影響持有成本與報酬",
+      "人在台灣，擔心海外出租與代管問題",
+      "已持有海外房產，正在評估轉售或加碼",
+      "夫妻或家人對海外置產意見不同",
+      "企業主想規劃跨境資產與生活備援",
+      "曾聽過海外置產糾紛，需要先建立信任",
+      "第一次預約諮詢，需要簡單清楚的入門說明"
     ];
     const CONVERSION_GOALS = ["私訊諮詢", "名單留單", "預約帶看", "成交轉化"];
     const $ = id => document.getElementById(id);
@@ -231,12 +312,16 @@
       $(id).innerHTML = values.map(value => `<option>${value}</option>`).join("");
     }
 
-    function fillTopicContentSelect() {
-      const groups = TOPIC_CONTENT_GROUPS.map(group => {
+    function fillGroupedSelect(id, sourceGroups, placeholder) {
+      const groups = sourceGroups.map(group => {
         const options = group.topics.map(topic => `<option value="${topic}">${topic}</option>`).join("");
         return `<optgroup label="${group.category}">${options}</optgroup>`;
       }).join("");
-      $("topicContent").innerHTML = `<option value="">自行輸入 / 不指定</option>${groups}`;
+      $(id).innerHTML = `<option value="">${placeholder}</option>${groups}`;
+    }
+
+    function fillTopicContentSelect() {
+      fillGroupedSelect("topicContent", TOPIC_CONTENT_GROUPS, "自行輸入 / 不指定");
     }
 
     function syncSubtopics() {
@@ -244,6 +329,8 @@
     }
 
     fillTopicContentSelect();
+    fillGroupedSelect("overseasTopic", OVERSEAS_TOPIC_GROUPS, "不指定海外資產主題");
+    fillSelect("overseasScenario", OVERSEAS_SCENARIOS);
     fillSelect("topicCategory", Object.keys(TOPIC_LIBRARY));
     fillSelect("conversionGoal", CONVERSION_GOALS);
     syncSubtopics();
@@ -251,6 +338,14 @@
     $("topicContent").onchange = () => {
       const selectedTopic = $("topicContent").value;
       if (selectedTopic) $("topic").value = selectedTopic;
+    };
+    $("overseasTopic").onchange = () => {
+      const selectedTopic = $("overseasTopic").value;
+      if (!selectedTopic) return;
+      $("topic").value = selectedTopic;
+      $("pillar").value = "海外置產觀察";
+      $("topicCategory").value = "海外置產投資";
+      syncSubtopics();
     };
 
     function systemPrompt() {
@@ -262,6 +357,8 @@
 
 主題：${$("topic").value.trim()}
 主題內容選項：${$("topicContent").value || "自行輸入"}
+海外資產主題：${$("overseasTopic").value || "不指定"}
+海外資產情境：${$("overseasScenario").value}
 房仲自媒體主題分類：${$("topicCategory").value}
 內容子題：${$("topicSubtopic").value}
 轉化目標：${$("conversionGoal").value}
@@ -283,6 +380,7 @@
 
 請讓內容適合台灣房仲、馬來西亞置產客戶、高收入家庭與個人品牌新手。
 內容必須專為房仲打造，分享如何用短影音與自媒體建立個人品牌、放大曝光，並把流量轉化為實際成交。
+若選擇海外資產主題，請回應指定的客戶情境，清楚說明適合對象、決策重點與下一步；不得保證報酬，並主動提醒匯率、稅務、法規、流動性、建商與管理風險。
 請把每段內容都導向「${$("conversionGoal").value}」，不要只做曝光型文案。`;
     }
 
