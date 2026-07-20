@@ -70,6 +70,11 @@
     .calendar-day{font-weight:900;color:#5e4a08}
     .calendar-topic{font-weight:900;margin-bottom:6px}
     .calendar-detail{font-size:13px;line-height:1.75;color:#333;white-space:pre-wrap}
+    .calendar-board{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px}
+    .calendar-date-card{background:#fffdf8;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:118px}
+    .calendar-date{font-size:12px;color:#5e4a08;font-weight:900;margin-bottom:6px}
+    .calendar-date-title{font-size:13px;font-weight:900;line-height:1.5}
+    .calendar-date-meta{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px}
     .compact-list{display:grid;gap:8px;margin-top:10px}
     .compact-item{background:#faf7ee;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;line-height:1.6}
     .dashboard-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
@@ -84,7 +89,7 @@
     .metric-pill{border:1px solid #e3d5ad;background:#fff7da;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
     .dashboard-note{margin-top:12px;background:#faf7ee;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.7;color:#333}
     .raw-result{display:none}
-    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item,.dashboard-stats{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
+    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item,.dashboard-stats,.calendar-board{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
   </style>
 </head>
 <body>
@@ -356,6 +361,34 @@
             </select>
           </div>
         </div>
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <label for="fbScheduleUrl">FB 排程網站路徑</label>
+            <input id="fbScheduleUrl" type="url" placeholder="https://business.facebook.com/latest/home?nav_ref=fb_bookmark" />
+          </div>
+          <div>
+            <label for="threadsUrl">Threads 網站路徑</label>
+            <input id="threadsUrl" type="url" placeholder="https://www.threads.net/" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <label for="calendarViewMode">月曆檢視</label>
+            <select id="calendarViewMode">
+              <option>清單 + 日期卡</option>
+              <option>只看清單</option>
+              <option>只看日期卡</option>
+            </select>
+          </div>
+          <div>
+            <label>發文入口</label>
+            <div class="actions">
+              <button class="secondary mini" id="saveSocialLinks" type="button">儲存連結</button>
+              <button class="ghost mini" id="openFbSchedule" type="button">開啟 FB 排程</button>
+              <button class="ghost mini" id="openThreadsSite" type="button">開啟 Threads</button>
+            </div>
+          </div>
+        </div>
         <div class="actions" style="margin-top:14px">
           <button class="primary" id="calendarGenerate" type="button">產生內容月曆</button>
           <button class="secondary" id="calendarCopy" type="button">複製月曆</button>
@@ -364,6 +397,7 @@
         <div class="hint">會依照目前主題、房仲自媒體分類、海外企劃欄位與轉化目標，自動排每日選題、平台、內容角度與 CTA。</div>
         <div id="calendarError"></div>
         <div id="calendarResult" class="calendar-list"></div>
+        <div id="calendarDateView" class="calendar-board"></div>
       </section>
     </section>
 
@@ -566,9 +600,13 @@
     const CONTENT_BOARD_KEY = "uncleHouseContentBoardV1";
     const LEAD_CRM_KEY = "uncleHouseLeadCrmV1";
     const GENERATOR_LINKS_KEY = "uncleHouseGeneratorLinksV1";
+    const SOCIAL_LINKS_KEY = "uncleHouseSocialLinksV1";
+    const DEFAULT_FB_SCHEDULE_URL = "https://business.facebook.com/latest/home?nav_ref=fb_bookmark";
+    const DEFAULT_THREADS_URL = "https://www.threads.net/";
     let lastContentText = "";
     let lastStoryboardText = "";
     let lastCalendarText = "";
+    let lastCalendarItems = [];
     let lastPlatformText = "";
     let lastFunnelText = "";
     let lastPreflightText = "";
@@ -719,6 +757,7 @@
     loadBrandProfile();
     renderMaterialLibrary();
     loadGeneratorLinks();
+    loadSocialLinks();
 
     function systemPrompt() {
       return "你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。";
@@ -1060,8 +1099,20 @@
       downloadText("房叔客戶名單CRM.csv", toCsv(getLeads(), ["name","source","keyword","status","appointment","value","note","createdAt"]));
     };
 
+    $("saveSocialLinks").onclick = () => {
+      saveSocialLinks();
+      if (lastCalendarItems.length) lastCalendarText = formatCalendarText(lastCalendarItems);
+      $("saveSocialLinks").textContent = "已儲存";
+      setTimeout(() => $("saveSocialLinks").textContent = "儲存連結", 1200);
+    };
+
+    $("openFbSchedule").onclick = () => openSocialUrl("fbScheduleUrl", "請先貼上 FB 排程網站路徑。");
+    $("openThreadsSite").onclick = () => openSocialUrl("threadsUrl", "請先貼上 Threads 網站路徑。");
+    $("calendarViewMode").onchange = () => renderCalendar(lastCalendarItems);
+
     $("calendarGenerate").onclick = () => {
       $("calendarError").innerHTML = "";
+      saveSocialLinks();
       const topic = $("topic").value.trim() || $("topicContent").value || $("overseasTopic").value || "房仲自媒體內容";
       const items = buildContentCalendar(Number($("calendarDays").value), topic);
       lastCalendarText = formatCalendarText(items);
@@ -1089,8 +1140,10 @@
         const platform = platformCycle[(day - 1) % platformCycle.length];
         const topic = topicPool[(day - 1) % topicPool.length];
         const publish = shouldPublish(day) ? "發布" : "備稿";
+        const date = getCalendarDate(day);
         rows.push({
           day,
+          date: formatCalendarDate(date),
           publish,
           platform,
           angle,
@@ -1100,6 +1153,17 @@
         });
       }
       return rows;
+    }
+
+    function getCalendarDate(day) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + day - 1);
+      return date;
+    }
+
+    function formatCalendarDate(date) {
+      return date.toLocaleDateString("zh-TW", { year:"numeric", month:"2-digit", day:"2-digit", weekday:"short" });
     }
 
     function makeCalendarTopicPool(baseTopic) {
@@ -1142,8 +1206,13 @@
     }
 
     function renderCalendar(items) {
+      lastCalendarItems = items || [];
       $("calendarResult").innerHTML = "";
-      items.forEach(item => {
+      $("calendarDateView").innerHTML = "";
+      const mode = $("calendarViewMode").value;
+      $("calendarResult").style.display = mode === "只看日期卡" ? "none" : "";
+      $("calendarDateView").style.display = mode === "只看清單" ? "none" : "";
+      if (mode !== "只看日期卡") lastCalendarItems.forEach(item => {
         const card = document.createElement("article");
         card.className = "calendar-item";
         const day = document.createElement("div");
@@ -1158,6 +1227,7 @@
         body.className = "calendar-detail";
         body.textContent = `狀態：${item.publish}
 平台：${item.platform}
+日期：${item.date || "未設定"}
 角度：${item.angle}
 Hook：${item.hook}
 CTA：${item.cta}`;
@@ -1174,10 +1244,33 @@ CTA：${item.cta}`;
         card.appendChild(detail);
         $("calendarResult").appendChild(card);
       });
+      if (mode !== "只看清單") renderCalendarDateView(lastCalendarItems);
+    }
+
+    function renderCalendarDateView(items) {
+      items.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "calendar-date-card";
+        const date = document.createElement("div");
+        date.className = "calendar-date";
+        date.textContent = item.date || `Day ${item.day}`;
+        const title = document.createElement("div");
+        title.className = "calendar-date-title";
+        title.textContent = item.topic;
+        const meta = document.createElement("div");
+        meta.className = "calendar-date-meta";
+        meta.textContent = `${item.publish}｜${item.platform}｜${item.angle}
+CTA：${item.cta}`;
+        card.appendChild(date);
+        card.appendChild(title);
+        card.appendChild(meta);
+        $("calendarDateView").appendChild(card);
+      });
     }
 
     function formatCalendarItem(item) {
       return `Day ${item.day}
+日期：${item.date || "未設定"}
 狀態：${item.publish}
 平台：${item.platform}
 主題：${item.topic}
@@ -1187,7 +1280,12 @@ CTA：${item.cta}`;
     }
 
     function formatCalendarText(items) {
-      return items.map(formatCalendarItem).join("\n\n---\n\n");
+      return [
+        `FB 排程網站：${getSocialUrl("fbScheduleUrl", DEFAULT_FB_SCHEDULE_URL)}`,
+        `Threads 網站：${getSocialUrl("threadsUrl", DEFAULT_THREADS_URL)}`,
+        "",
+        items.map(formatCalendarItem).join("\n\n---\n\n")
+      ].join("\n");
     }
 
     function collectBrandProfile() {
@@ -1928,6 +2026,40 @@ ${scene.emotion}`;
       }
     }
 
+    function loadSocialLinks() {
+      try {
+        const links = JSON.parse(localStorage.getItem(SOCIAL_LINKS_KEY) || "{}");
+        $("fbScheduleUrl").value = links.fb || DEFAULT_FB_SCHEDULE_URL;
+        $("threadsUrl").value = links.threads || DEFAULT_THREADS_URL;
+      } catch {
+        $("fbScheduleUrl").value = DEFAULT_FB_SCHEDULE_URL;
+        $("threadsUrl").value = DEFAULT_THREADS_URL;
+      }
+    }
+
+    function saveSocialLinks() {
+      localStorage.setItem(SOCIAL_LINKS_KEY, JSON.stringify({
+        fb:getSocialUrl("fbScheduleUrl", DEFAULT_FB_SCHEDULE_URL),
+        threads:getSocialUrl("threadsUrl", DEFAULT_THREADS_URL)
+      }));
+    }
+
+    function getSocialUrl(id, fallback) {
+      return $(id).value.trim() || fallback;
+    }
+
+    function openSocialUrl(id, errorMessage) {
+      const url = getSocialUrl(id, "");
+      if (!url) return showCalendarError(errorMessage);
+      try {
+        const normalized = new URL(url);
+        saveSocialLinks();
+        window.open(normalized.href, "_blank", "noopener,noreferrer");
+      } catch {
+        showCalendarError("網站路徑格式不正確，請貼上完整網址，例如 https://...");
+      }
+    }
+
     function renderResultCards(text) {
       $("result").classList.add("raw-result");
       $("sectionCards").innerHTML = "";
@@ -2009,7 +2141,7 @@ ${scene.emotion}`;
     }
 
     function collectContentForm() {
-      return ["topic","topicContent","overseasTopic","overseasScenario","assetCountry","assetCity","assetType","assetPurpose","assetBudget","assetAudience","pillar","format","topicCategory","topicSubtopic","conversionGoal","brandPosition","brandArea","brandAudience","brandTone","brandSignature","materialSelect","calendarDays","calendarPlatform","calendarFrequency"].reduce((data, id) => {
+      return ["topic","topicContent","overseasTopic","overseasScenario","assetCountry","assetCity","assetType","assetPurpose","assetBudget","assetAudience","pillar","format","topicCategory","topicSubtopic","conversionGoal","brandPosition","brandArea","brandAudience","brandTone","brandSignature","materialSelect","calendarDays","calendarPlatform","calendarFrequency","fbScheduleUrl","threadsUrl","calendarViewMode"].reduce((data, id) => {
         data[id] = $(id).value;
         return data;
       }, {});
