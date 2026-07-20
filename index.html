@@ -73,7 +73,7 @@
       <img src="logo-uncle-house.jpg" alt="Uncle House Logo" />
       <div>
         <h1>房叔 AI 提示詞生成器</h1>
-        <div class="sub">內容生成・深層分鏡・專案紀錄</div>
+        <div class="sub">內容生成・生成分鏡・專案紀錄</div>
       </div>
     </div>
   </header>
@@ -81,7 +81,7 @@
   <main>
     <nav class="tabs" aria-label="工具分頁">
       <button class="tab-btn active" type="button" data-tab="contentPanel">內容生成</button>
-      <button class="tab-btn" type="button" data-tab="storyboardPanel">深層分鏡</button>
+      <button class="tab-btn" type="button" data-tab="storyboardPanel">生成分鏡</button>
       <button class="tab-btn" type="button" data-tab="historyPanel">專案紀錄</button>
     </nav>
 
@@ -421,7 +421,7 @@
 2. FB貼文開頭25字內要有衝突感。
 3. Threads 請輸出 5 則。
 4. 圖片提示詞固定為 ${IMAGE_MODEL}，包含繁中 Prompt、English Prompt、Negative Prompt、Canva 排版指引、V3 檢查。
-5. 影片提示詞請能銜接深層分鏡，包含鏡頭、節奏、動作與情緒，但不要加入字幕文字、水印或誇張特效。
+5. 影片提示詞請能銜接生成分鏡，包含鏡頭、節奏、動作與情緒，但不要加入字幕文字、水印或誇張特效。
 6. 成交轉化工具必須包含留言關鍵字、私訊回覆、預約諮詢話術、後續追蹤訊息。
 7. 海外內容安全檢查必須檢查：報酬保證、匯率、稅務、法規、產權、風險揭露。
 
@@ -574,7 +574,7 @@
 
     $("storyDownload").onclick = () => {
       if (!lastStoryboardText) return showStoryError("目前沒有可下載分鏡，請先產生分鏡。");
-      downloadText("房叔深層分鏡.txt", lastStoryboardText);
+      downloadText("房叔生成分鏡.txt", lastStoryboardText);
     };
 
     $("downloadHistory").onclick = () => {
