@@ -82,6 +82,7 @@
     .tracking-meta{font-size:12px;color:var(--muted);line-height:1.7}
     .tracking-metrics{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
     .metric-pill{border:1px solid #e3d5ad;background:#fff7da;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
+    .dashboard-note{margin-top:12px;background:#faf7ee;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.7;color:#333}
     .raw-result{display:none}
     @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item,.dashboard-stats{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
   </style>
@@ -433,6 +434,12 @@
 
     <section id="historyPanel" class="tab-panel">
       <section class="box">
+        <h2>自動總覽儀表板</h2>
+        <div class="dashboard-stats" id="opsDashboardStats"></div>
+        <div id="opsDashboardNote" class="dashboard-note"></div>
+      </section>
+
+      <section class="box">
         <h2>內容狀態看板</h2>
         <div class="grid-3">
           <div>
@@ -641,6 +648,7 @@
       document.querySelectorAll(".tab-btn").forEach(button => button.classList.toggle("active", button.dataset.tab === tabId));
       document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === tabId));
       if (tabId === "historyPanel") {
+        renderOpsDashboard();
         renderContentBoard();
         renderLeadCrm();
         renderHistory();
@@ -1021,14 +1029,8 @@
 
     $("addLatestHistoryToBoard").onclick = () => {
       const latest = getHistory()[0];
-      const title = latest?.title || getCurrentTopic();
-      $("contentTrackTitle").value = title;
-      $("contentTrackPlatform").value = latest?.type === "platform" ? "多平台內容包" : "Reels";
-      $("contentTrackStatus").value = "草稿";
-      $("contentTrackCta").value = CTA_LIBRARY[$("conversionGoal").value] || "";
-      $("contentTrackNote").value = latest ? `來自專案紀錄：${latest.type}` : "手動加入";
-      saveContentBoardItem(collectContentTrack());
-      clearContentTrackForm();
+      if (!latest) return;
+      addHistoryToBoard(latest);
     };
 
     $("downloadContentBoard").onclick = () => {
@@ -1390,8 +1392,48 @@ ${cta}`},
       }
     }
 
+    function renderOpsDashboard() {
+      const history = getHistory();
+      const board = getContentBoard();
+      const leads = getLeads();
+      const today = new Date().toDateString();
+      const todayHistory = history.filter(item => new Date(item.createdAt).toDateString() === today).length;
+      const stats = {
+        "今日生成": todayHistory,
+        "待拍攝": board.filter(item => ["草稿","已拍攝"].includes(item.status)).length,
+        "已發布": board.filter(item => ["已發布","有私訊","已預約","已成交"].includes(item.status)).length,
+        "有私訊": board.filter(item => item.status === "有私訊").length + sumBy(board, "messages"),
+        "待追蹤": leads.filter(lead => !["已成交","暫緩追蹤"].includes(lead.status)).length
+      };
+      $("opsDashboardStats").innerHTML = "";
+      Object.entries(stats).forEach(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "stat-card";
+        const labelNode = document.createElement("div");
+        labelNode.className = "stat-label";
+        labelNode.textContent = label;
+        const valueNode = document.createElement("div");
+        valueNode.className = "stat-value";
+        valueNode.textContent = value;
+        card.appendChild(labelNode);
+        card.appendChild(valueNode);
+        $("opsDashboardStats").appendChild(card);
+      });
+      $("opsDashboardNote").textContent = buildDashboardNote(history, board, leads);
+    }
+
+    function buildDashboardNote(history, board, leads) {
+      if (!history.length && !board.length && !leads.length) return "目前還沒有資料。先生成一篇內容，系統會自動保存到專案紀錄，再用「加入看板」開始追蹤。";
+      const drafts = board.filter(item => item.status === "草稿").length;
+      const hotLeads = leads.filter(lead => ["已回覆","已預約","已諮詢"].includes(lead.status)).length;
+      if (hotLeads) return `目前有 ${hotLeads} 位客戶已進入高意向狀態，建議優先追蹤預約與成交推進。`;
+      if (drafts) return `目前有 ${drafts} 篇內容停在草稿，建議先挑 1 篇拍攝發布，再觀察私訊與預約。`;
+      return "目前內容生產與追蹤狀態正常。下一步可以把最新專案紀錄加入看板，持續累積成效資料。";
+    }
+
     function saveContentBoard(items) {
       localStorage.setItem(CONTENT_BOARD_KEY, JSON.stringify(items));
+      renderOpsDashboard();
       renderContentBoard();
     }
 
@@ -1416,6 +1458,46 @@ ${cta}`},
     function saveContentBoardItem(item) {
       if (!item.title) return;
       saveContentBoard([item, ...getContentBoard()].slice(0, 100));
+    }
+
+    function addHistoryToBoard(historyItem) {
+      const item = historyToBoardItem(historyItem);
+      saveContentBoardItem(item);
+      renderHistory();
+    }
+
+    function historyToBoardItem(historyItem) {
+      return {
+        id:Date.now().toString(36),
+        title:historyItem.title || "未命名內容",
+        platform:inferHistoryPlatform(historyItem),
+        status:"草稿",
+        cta:inferCtaFromText(historyItem.text || "") || "待設定 CTA",
+        publishDate:"",
+        note:`自動加入：${historyItem.type}｜${new Date(historyItem.createdAt).toLocaleString("zh-TW")}`,
+        views:0,
+        comments:0,
+        messages:0,
+        appointments:0,
+        deals:0,
+        historyId:historyItem.id,
+        createdAt:new Date().toISOString()
+      };
+    }
+
+    function inferHistoryPlatform(item) {
+      if (item.type === "platform") return "多平台內容包";
+      if (item.type === "calendar") return "FB";
+      if (item.type === "storyboard") return "Reels";
+      if (item.type === "funnel") return "LINE 私域";
+      return "Reels";
+    }
+
+    function inferCtaFromText(text) {
+      const keywordMatch = text.match(/留言[「\"]([^」\"]+)[」\"]/);
+      if (keywordMatch) return `留言「${keywordMatch[1]}」`;
+      const ctaLine = text.split("\n").find(line => /CTA|私訊|預約|諮詢|留言/.test(line));
+      return ctaLine ? ctaLine.slice(0, 48) : "";
     }
 
     function clearContentTrackForm() {
@@ -1556,6 +1638,7 @@ CTA：${item.cta || "未填"}
 
     function saveLeads(leads) {
       localStorage.setItem(LEAD_CRM_KEY, JSON.stringify(leads));
+      renderOpsDashboard();
       renderLeadCrm();
     }
 
@@ -1967,6 +2050,7 @@ ${scene.emotion}`;
       const history = getHistory();
       const saved = {id:Date.now().toString(36),createdAt:new Date().toISOString(),favorite:false,...item};
       localStorage.setItem(HISTORY_KEY, JSON.stringify([saved, ...history].slice(0, 40)));
+      renderOpsDashboard();
       renderHistory();
     }
 
@@ -1996,6 +2080,7 @@ ${scene.emotion}`;
         card.appendChild(actions);
         [
           ["重新開啟", () => openHistoryItem(item)],
+          ["加入看板", () => addHistoryToBoard(item)],
           [item.favorite ? "取消收藏" : "收藏", () => toggleFavorite(item.id)],
           ["下載", () => downloadText(`${item.title || "房仲自媒體工廠專案"}.txt`, item.text || "")],
           ["刪除", () => deleteHistory(item.id)]
