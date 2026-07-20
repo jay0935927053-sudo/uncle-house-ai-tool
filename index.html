@@ -72,8 +72,18 @@
     .calendar-detail{font-size:13px;line-height:1.75;color:#333;white-space:pre-wrap}
     .compact-list{display:grid;gap:8px;margin-top:10px}
     .compact-item{background:#faf7ee;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;line-height:1.6}
+    .dashboard-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+    .stat-card{background:#151515;color:#f5d060;border-radius:12px;padding:12px}
+    .stat-label{font-size:11px;color:#d6c48a;font-weight:800}
+    .stat-value{font-size:22px;font-weight:900;margin-top:4px}
+    .tracking-list{display:grid;gap:10px;margin-top:14px}
+    .tracking-card{background:#fffdf8;border:1px solid var(--line);border-radius:12px;padding:12px}
+    .tracking-title{font-weight:900;margin-bottom:8px}
+    .tracking-meta{font-size:12px;color:var(--muted);line-height:1.7}
+    .tracking-metrics{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .metric-pill{border:1px solid #e3d5ad;background:#fff7da;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:800}
     .raw-result{display:none}
-    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
+    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item,.dashboard-stats{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
   </style>
 </head>
 <body>
@@ -403,6 +413,112 @@
 
     <section id="historyPanel" class="tab-panel">
       <section class="box">
+        <h2>內容狀態看板</h2>
+        <div class="grid-3">
+          <div>
+            <label for="contentTrackTitle">內容標題</label>
+            <input id="contentTrackTitle" type="text" placeholder="例：高收入家庭為什麼看海外置產" />
+          </div>
+          <div>
+            <label for="contentTrackPlatform">平台</label>
+            <select id="contentTrackPlatform"></select>
+          </div>
+          <div>
+            <label for="contentTrackStatus">狀態</label>
+            <select id="contentTrackStatus"></select>
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:12px">
+          <div>
+            <label for="contentTrackCta">CTA / 關鍵字</label>
+            <input id="contentTrackCta" type="text" placeholder="例：留言「海外」" />
+          </div>
+          <div>
+            <label for="contentTrackPublishDate">發布日</label>
+            <input id="contentTrackPublishDate" type="date" />
+          </div>
+          <div>
+            <label for="contentTrackNote">備註</label>
+            <input id="contentTrackNote" type="text" placeholder="例：由月曆 Day 3 改寫" />
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:12px">
+          <div>
+            <label for="contentTrackViews">觀看</label>
+            <input id="contentTrackViews" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label for="contentTrackComments">留言</label>
+            <input id="contentTrackComments" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label for="contentTrackMessages">私訊</label>
+            <input id="contentTrackMessages" type="number" min="0" value="0" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <label for="contentTrackAppointments">預約</label>
+            <input id="contentTrackAppointments" type="number" min="0" value="0" />
+          </div>
+          <div>
+            <label for="contentTrackDeals">成交</label>
+            <input id="contentTrackDeals" type="number" min="0" value="0" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" id="saveContentTrack" type="button">加入看板</button>
+          <button class="secondary" id="addLatestHistoryToBoard" type="button">最近生成加入看板</button>
+          <button class="ghost" id="downloadContentBoard" type="button">下載看板 CSV</button>
+        </div>
+        <div class="dashboard-stats" id="contentBoardStats"></div>
+        <div id="contentBoardList" class="tracking-list"></div>
+      </section>
+
+      <section class="box">
+        <h2>客戶名單追蹤 CRM</h2>
+        <div class="grid-3">
+          <div>
+            <label for="leadName">姓名 / 暱稱</label>
+            <input id="leadName" type="text" placeholder="例：王先生 / FB暱稱" />
+          </div>
+          <div>
+            <label for="leadSource">來源內容</label>
+            <input id="leadSource" type="text" placeholder="例：Day 3 海外置產 Reels" />
+          </div>
+          <div>
+            <label for="leadKeyword">留言關鍵字</label>
+            <input id="leadKeyword" type="text" placeholder="例：海外 / 清單 / 評估" />
+          </div>
+        </div>
+        <div class="grid-3" style="margin-top:12px">
+          <div>
+            <label for="leadStatus">追蹤狀態</label>
+            <select id="leadStatus"></select>
+          </div>
+          <div>
+            <label for="leadAppointment">預約時間</label>
+            <input id="leadAppointment" type="datetime-local" />
+          </div>
+          <div>
+            <label for="leadValue">預估案件價值</label>
+            <input id="leadValue" type="number" min="0" value="0" />
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label for="leadNote">追蹤備註</label>
+          <textarea id="leadNote" placeholder="例：想了解馬來西亞 KLCC，擔心匯率與出租代管，週五晚上可通話"></textarea>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="primary" id="saveLead" type="button">加入 CRM</button>
+          <button class="secondary" id="leadFromLatestContent" type="button">用最近內容建立名單</button>
+          <button class="ghost" id="downloadLeads" type="button">下載 CRM CSV</button>
+        </div>
+        <div class="dashboard-stats" id="leadStats"></div>
+        <div id="leadList" class="tracking-list"></div>
+      </section>
+
+      <section class="box">
         <h2>專案紀錄</h2>
         <div class="actions">
           <button class="secondary" id="downloadHistory" type="button">下載全部紀錄</button>
@@ -420,6 +536,8 @@
     const HISTORY_KEY = "uncleHouseAiToolProjectsV4";
     const BRAND_PROFILE_KEY = "uncleHouseBrandProfileV1";
     const MATERIAL_LIBRARY_KEY = "uncleHouseMaterialLibraryV1";
+    const CONTENT_BOARD_KEY = "uncleHouseContentBoardV1";
+    const LEAD_CRM_KEY = "uncleHouseLeadCrmV1";
     let lastContentText = "";
     let lastStoryboardText = "";
     let lastCalendarText = "";
@@ -468,6 +586,9 @@
     const ASSET_AUDIENCES = ["高收入家庭","企業主","退休規劃族","子女留學家庭","房仲海外案源開發","首次海外置產者","已有海外資產者"];
     const ASSET_TYPES = ["高樓住宅","服務式公寓","豪宅公寓","商辦店面","學生公寓","土地型資產","REITs概念"];
     const CALENDAR_PLATFORMS = ["FB + Threads + Reels","FB","Threads","Reels","YouTube Shorts","LINE 私域"];
+    const CONTENT_TRACK_PLATFORMS = ["Reels","TikTok","YouTube Shorts","FB","Threads","LINE 私域","多平台內容包"];
+    const CONTENT_STATUSES = ["草稿","已拍攝","已發布","有私訊","已預約","已成交"];
+    const LEAD_STATUSES = ["新留言","已私訊","已回覆","已預約","已諮詢","已成交","暫緩追蹤"];
     const CONTENT_ANGLES = ["痛點提醒","迷思破解","案例故事","教學拆解","風險提醒","工具示範","成交轉化"];
     const CTA_LIBRARY = {
       "私訊諮詢":"留言「諮詢」，我整理一份適合你的下一步。",
@@ -498,7 +619,11 @@
     function activateTab(tabId) {
       document.querySelectorAll(".tab-btn").forEach(button => button.classList.toggle("active", button.dataset.tab === tabId));
       document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === tabId));
-      if (tabId === "historyPanel") renderHistory();
+      if (tabId === "historyPanel") {
+        renderContentBoard();
+        renderLeadCrm();
+        renderHistory();
+      }
     }
 
     $("toggleKey").onclick = () => {
@@ -539,6 +664,9 @@
     fillSelect("assetAudience", ASSET_AUDIENCES);
     fillSelect("assetType", ASSET_TYPES);
     fillSelect("calendarPlatform", CALENDAR_PLATFORMS);
+    fillSelect("contentTrackPlatform", CONTENT_TRACK_PLATFORMS);
+    fillSelect("contentTrackStatus", CONTENT_STATUSES);
+    fillSelect("leadStatus", LEAD_STATUSES);
     syncSubtopics();
     syncAssetCities();
     $("topicCategory").onchange = syncSubtopics;
@@ -844,6 +972,53 @@
     $("preflightCopy").onclick = async () => {
       if (!lastPreflightText) return showPreflightError("目前沒有可複製檢查表，請先檢查目前內容。");
       await copyText(lastPreflightText, $("preflightCopy"), "複製檢查表");
+    };
+
+    $("saveContentTrack").onclick = () => {
+      const title = $("contentTrackTitle").value.trim();
+      if (!title) return;
+      const item = collectContentTrack();
+      saveContentBoardItem(item);
+      clearContentTrackForm();
+    };
+
+    $("addLatestHistoryToBoard").onclick = () => {
+      const latest = getHistory()[0];
+      const title = latest?.title || getCurrentTopic();
+      $("contentTrackTitle").value = title;
+      $("contentTrackPlatform").value = latest?.type === "platform" ? "多平台內容包" : "Reels";
+      $("contentTrackStatus").value = "草稿";
+      $("contentTrackCta").value = CTA_LIBRARY[$("conversionGoal").value] || "";
+      $("contentTrackNote").value = latest ? `來自專案紀錄：${latest.type}` : "手動加入";
+      saveContentBoardItem(collectContentTrack());
+      clearContentTrackForm();
+    };
+
+    $("downloadContentBoard").onclick = () => {
+      downloadText("房叔內容狀態看板.csv", toCsv(getContentBoard(), ["title","platform","status","cta","publishDate","views","comments","messages","appointments","deals","note","createdAt"]));
+    };
+
+    $("saveLead").onclick = () => {
+      const name = $("leadName").value.trim();
+      if (!name) return;
+      saveLeadItem(collectLead());
+      clearLeadForm();
+    };
+
+    $("leadFromLatestContent").onclick = () => {
+      const latestBoard = getContentBoard()[0];
+      const latestHistory = getHistory()[0];
+      $("leadName").value = "待填姓名";
+      $("leadSource").value = latestBoard?.title || latestHistory?.title || getCurrentTopic();
+      $("leadKeyword").value = pickKeyword($("leadSource").value);
+      $("leadStatus").value = "新留言";
+      $("leadNote").value = latestBoard ? `來自內容看板：${latestBoard.platform} / ${latestBoard.status}` : "由最近內容建立，請補上客戶資訊。";
+      saveLeadItem(collectLead());
+      clearLeadForm();
+    };
+
+    $("downloadLeads").onclick = () => {
+      downloadText("房叔客戶名單CRM.csv", toCsv(getLeads(), ["name","source","keyword","status","appointment","value","note","createdAt"]));
     };
 
     $("calendarGenerate").onclick = () => {
@@ -1168,6 +1343,302 @@ ${cta}`},
 
     function formatPreflightText(checks) {
       return checks.map(check => `${check.title}：${check.pass ? "通過" : "需補強"}\n建議：${check.advice}`).join("\n\n");
+    }
+
+    function getContentBoard() {
+      try {
+        return JSON.parse(localStorage.getItem(CONTENT_BOARD_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveContentBoard(items) {
+      localStorage.setItem(CONTENT_BOARD_KEY, JSON.stringify(items));
+      renderContentBoard();
+    }
+
+    function collectContentTrack() {
+      return {
+        id:Date.now().toString(36),
+        title:$("contentTrackTitle").value.trim(),
+        platform:$("contentTrackPlatform").value,
+        status:$("contentTrackStatus").value,
+        cta:$("contentTrackCta").value.trim(),
+        publishDate:$("contentTrackPublishDate").value,
+        note:$("contentTrackNote").value.trim(),
+        views:Number($("contentTrackViews").value || 0),
+        comments:Number($("contentTrackComments").value || 0),
+        messages:Number($("contentTrackMessages").value || 0),
+        appointments:Number($("contentTrackAppointments").value || 0),
+        deals:Number($("contentTrackDeals").value || 0),
+        createdAt:new Date().toISOString()
+      };
+    }
+
+    function saveContentBoardItem(item) {
+      if (!item.title) return;
+      saveContentBoard([item, ...getContentBoard()].slice(0, 100));
+    }
+
+    function clearContentTrackForm() {
+      ["contentTrackTitle","contentTrackCta","contentTrackPublishDate","contentTrackNote"].forEach(id => $(id).value = "");
+      ["contentTrackViews","contentTrackComments","contentTrackMessages","contentTrackAppointments","contentTrackDeals"].forEach(id => $(id).value = "0");
+      $("contentTrackStatus").value = "草稿";
+    }
+
+    function renderContentBoard() {
+      const items = getContentBoard();
+      const stats = {
+        "內容數": items.length,
+        "已發布": items.filter(item => ["已發布","有私訊","已預約","已成交"].includes(item.status)).length,
+        "私訊": sumBy(items, "messages"),
+        "預約": sumBy(items, "appointments"),
+        "成交": sumBy(items, "deals")
+      };
+      $("contentBoardStats").innerHTML = "";
+      Object.entries(stats).forEach(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "stat-card";
+        const labelNode = document.createElement("div");
+        labelNode.className = "stat-label";
+        labelNode.textContent = label;
+        const valueNode = document.createElement("div");
+        valueNode.className = "stat-value";
+        valueNode.textContent = value;
+        card.appendChild(labelNode);
+        card.appendChild(valueNode);
+        $("contentBoardStats").appendChild(card);
+      });
+      const list = $("contentBoardList");
+      list.innerHTML = "";
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "compact-item";
+        empty.textContent = "目前還沒有內容追蹤，先把最近生成內容加入看板。";
+        list.appendChild(empty);
+        return;
+      }
+      items.forEach(item => renderContentBoardCard(list, item));
+    }
+
+    function renderContentBoardCard(list, item) {
+      const card = document.createElement("article");
+      card.className = "tracking-card";
+      const title = document.createElement("div");
+      title.className = "tracking-title";
+      title.textContent = item.title;
+      const meta = document.createElement("div");
+      meta.className = "tracking-meta";
+      meta.textContent = `${item.platform}｜${item.status}｜${item.publishDate || "未排程"}${item.cta ? `｜${item.cta}` : ""}${item.note ? `｜${item.note}` : ""}`;
+      const metrics = document.createElement("div");
+      metrics.className = "tracking-metrics";
+      [
+        `觀看 ${item.views || 0}`,
+        `留言 ${item.comments || 0}`,
+        `私訊 ${item.messages || 0}`,
+        `預約 ${item.appointments || 0}`,
+        `成交 ${item.deals || 0}`
+      ].forEach(text => {
+        const pill = document.createElement("span");
+        pill.className = "metric-pill";
+        pill.textContent = text;
+        metrics.appendChild(pill);
+      });
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      actions.style.marginTop = "10px";
+      const statusSelect = document.createElement("select");
+      statusSelect.style.maxWidth = "160px";
+      statusSelect.innerHTML = CONTENT_STATUSES.map(status => `<option>${status}</option>`).join("");
+      statusSelect.value = item.status;
+      statusSelect.onchange = () => updateContentStatus(item.id, statusSelect.value);
+      const copyButton = document.createElement("button");
+      copyButton.className = "secondary mini";
+      copyButton.type = "button";
+      copyButton.textContent = "Copy";
+      copyButton.onclick = () => copyText(formatContentBoardItem(item), copyButton, "Copy");
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "ghost mini";
+      deleteButton.type = "button";
+      deleteButton.textContent = "刪除";
+      deleteButton.onclick = () => deleteContentBoardItem(item.id);
+      actions.appendChild(statusSelect);
+      actions.appendChild(copyButton);
+      actions.appendChild(deleteButton);
+      card.appendChild(title);
+      card.appendChild(meta);
+      card.appendChild(metrics);
+      card.appendChild(actions);
+      list.appendChild(card);
+    }
+
+    function updateContentStatus(id, status) {
+      saveContentBoard(getContentBoard().map(item => item.id === id ? {...item,status} : item));
+    }
+
+    function deleteContentBoardItem(id) {
+      saveContentBoard(getContentBoard().filter(item => item.id !== id));
+    }
+
+    function formatContentBoardItem(item) {
+      return `內容：${item.title}
+平台：${item.platform}
+狀態：${item.status}
+CTA：${item.cta || "未填"}
+發布日：${item.publishDate || "未排程"}
+觀看：${item.views || 0}
+留言：${item.comments || 0}
+私訊：${item.messages || 0}
+預約：${item.appointments || 0}
+成交：${item.deals || 0}
+備註：${item.note || "無"}`;
+    }
+
+    function sumBy(items, key) {
+      return items.reduce((total, item) => total + Number(item[key] || 0), 0);
+    }
+
+    function toCsv(items, fields) {
+      const header = fields.join(",");
+      const rows = items.map(item => fields.map(field => csvCell(item[field] ?? "")).join(","));
+      return [header, ...rows].join("\n");
+    }
+
+    function csvCell(value) {
+      return `"${String(value).replace(/"/g, '""')}"`;
+    }
+
+    function getLeads() {
+      try {
+        return JSON.parse(localStorage.getItem(LEAD_CRM_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLeads(leads) {
+      localStorage.setItem(LEAD_CRM_KEY, JSON.stringify(leads));
+      renderLeadCrm();
+    }
+
+    function collectLead() {
+      return {
+        id:Date.now().toString(36),
+        name:$("leadName").value.trim(),
+        source:$("leadSource").value.trim(),
+        keyword:$("leadKeyword").value.trim(),
+        status:$("leadStatus").value,
+        appointment:$("leadAppointment").value,
+        value:Number($("leadValue").value || 0),
+        note:$("leadNote").value.trim(),
+        createdAt:new Date().toISOString()
+      };
+    }
+
+    function saveLeadItem(lead) {
+      if (!lead.name) return;
+      saveLeads([lead, ...getLeads()].slice(0, 200));
+    }
+
+    function clearLeadForm() {
+      ["leadName","leadSource","leadKeyword","leadAppointment","leadNote"].forEach(id => $(id).value = "");
+      $("leadValue").value = "0";
+      $("leadStatus").value = "新留言";
+    }
+
+    function renderLeadCrm() {
+      const leads = getLeads();
+      const stats = {
+        "名單數": leads.length,
+        "已私訊": leads.filter(lead => ["已私訊","已回覆","已預約","已諮詢","已成交"].includes(lead.status)).length,
+        "已預約": leads.filter(lead => ["已預約","已諮詢","已成交"].includes(lead.status)).length,
+        "已成交": leads.filter(lead => lead.status === "已成交").length,
+        "預估值": sumBy(leads, "value")
+      };
+      $("leadStats").innerHTML = "";
+      Object.entries(stats).forEach(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "stat-card";
+        const labelNode = document.createElement("div");
+        labelNode.className = "stat-label";
+        labelNode.textContent = label;
+        const valueNode = document.createElement("div");
+        valueNode.className = "stat-value";
+        valueNode.textContent = value;
+        card.appendChild(labelNode);
+        card.appendChild(valueNode);
+        $("leadStats").appendChild(card);
+      });
+      const list = $("leadList");
+      list.innerHTML = "";
+      if (!leads.length) {
+        const empty = document.createElement("div");
+        empty.className = "compact-item";
+        empty.textContent = "目前還沒有客戶名單，從留言或最近內容建立第一筆追蹤。";
+        list.appendChild(empty);
+        return;
+      }
+      leads.forEach(lead => renderLeadCard(list, lead));
+    }
+
+    function renderLeadCard(list, lead) {
+      const card = document.createElement("article");
+      card.className = "tracking-card";
+      const title = document.createElement("div");
+      title.className = "tracking-title";
+      title.textContent = lead.name;
+      const meta = document.createElement("div");
+      meta.className = "tracking-meta";
+      meta.textContent = `${lead.status}｜${lead.source || "未填來源"}｜關鍵字：${lead.keyword || "未填"}｜預約：${lead.appointment || "未排程"}`;
+      const note = document.createElement("div");
+      note.className = "tracking-meta";
+      note.style.marginTop = "6px";
+      note.textContent = `備註：${lead.note || "無"}｜預估案件價值：${lead.value || 0}`;
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      actions.style.marginTop = "10px";
+      const statusSelect = document.createElement("select");
+      statusSelect.style.maxWidth = "160px";
+      statusSelect.innerHTML = LEAD_STATUSES.map(status => `<option>${status}</option>`).join("");
+      statusSelect.value = lead.status;
+      statusSelect.onchange = () => updateLeadStatus(lead.id, statusSelect.value);
+      const copyButton = document.createElement("button");
+      copyButton.className = "secondary mini";
+      copyButton.type = "button";
+      copyButton.textContent = "Copy";
+      copyButton.onclick = () => copyText(formatLead(lead), copyButton, "Copy");
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "ghost mini";
+      deleteButton.type = "button";
+      deleteButton.textContent = "刪除";
+      deleteButton.onclick = () => deleteLead(lead.id);
+      actions.appendChild(statusSelect);
+      actions.appendChild(copyButton);
+      actions.appendChild(deleteButton);
+      card.appendChild(title);
+      card.appendChild(meta);
+      card.appendChild(note);
+      card.appendChild(actions);
+      list.appendChild(card);
+    }
+
+    function updateLeadStatus(id, status) {
+      saveLeads(getLeads().map(lead => lead.id === id ? {...lead,status} : lead));
+    }
+
+    function deleteLead(id) {
+      saveLeads(getLeads().filter(lead => lead.id !== id));
+    }
+
+    function formatLead(lead) {
+      return `姓名：${lead.name}
+來源內容：${lead.source || "未填"}
+留言關鍵字：${lead.keyword || "未填"}
+追蹤狀態：${lead.status}
+預約時間：${lead.appointment || "未排程"}
+預估案件價值：${lead.value || 0}
+追蹤備註：${lead.note || "無"}`;
     }
 
     function shortHook(topic) {
@@ -1568,6 +2039,8 @@ ${scene.emotion}`;
       $("preflightError").innerHTML = `<div class="error">${message}</div>`;
     }
 
+    renderContentBoard();
+    renderLeadCrm();
     renderHistory();
   </script>
 </body>
