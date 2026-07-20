@@ -81,6 +81,25 @@ LINE Messaging API
 LINE Official Account
 ```
 
+## 深層圖片自動化
+
+API Key 僅保存在本機 `.env.local` 或正式後台 Secrets，不進前端網站。
+
+目前本機腳本：
+
+```text
+scripts/generate-daily-images.mjs
+```
+
+預設每天只為兩個分類各產 1 張 FB 貼文圖，先不生成分鏡圖圖片：
+
+```text
+01_海外資產內容 / FB貼文圖.png
+02_房仲自媒體內容 / FB貼文圖.png
+```
+
+若正式自動任務偵測到 API Key 可用，產圖後上傳到對應 Google Drive 分類資料夾。
+
 ## 手機操作流程
 
 1. 收到 Gmail 通知
