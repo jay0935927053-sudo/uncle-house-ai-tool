@@ -1299,13 +1299,36 @@ CTA：${item.cta}`;
     }
 
     function buildManualDailyPack() {
-      const topic = getCurrentTopic();
-      const source = getWorkingSource();
-      const platformPack = buildPlatformPack(source);
+      const categories = getDailyPackCategories();
+      const categoryPacks = categories.map(buildManualDailyCategoryPack);
+      const topic = categories.map(category => category.topic).join(" / ");
+      const calendarItems = categories.flatMap(category => buildContentCalendar(Math.min(Number($("calendarDays").value), 7), category.topic));
+      return [
+        "房仲自媒體工廠｜手動測試發文包",
+        `日期：${formatDailyPackDate(new Date())}`,
+        `雲端結構：YYYY-MM-DD｜每日發文包 / 01_海外資產內容、02_房仲自媒體內容`,
+        `主題：${topic}`,
+        `FB 排程網站：${getSocialUrl("fbScheduleUrl", DEFAULT_FB_SCHEDULE_URL)}`,
+        `Threads 網站：${getSocialUrl("threadsUrl", DEFAULT_THREADS_URL)}`,
+        "",
+        "用途：測試每日 10:00 後台發文包格式；本檔只在瀏覽器本機下載，不會上傳雲端、不會寄信、不會使用 API Key。",
+        "手機流程：Google Drive 收到正式包後 → 進入對應分類資料夾 → 複製平台文案 → 產圖/做影片 → 到社群平台發布或排程。",
+        "",
+        "今日月曆摘要",
+        formatCalendarText(calendarItems),
+        "",
+        categoryPacks.join("\n\n")
+      ].join("\n");
+    }
+
+    function buildManualDailyCategoryPack(category) {
+      const topic = category.topic;
+      const source = enrichDailyPackSource(getWorkingSource(), topic);
+      const platformPack = buildPlatformPack(source, topic).map(section => strengthenPlatformSection(section, topic));
       const funnelPack = buildFunnelPack(source);
-      const preflightText = formatPreflightText(buildPreflightChecks(source));
-      const storyboardText = formatStoryboardText(buildStoryboard(topic, 15, $("storyUniverse").value || "海外置產宇宙"));
-      const calendarItems = lastCalendarItems.length ? lastCalendarItems : buildContentCalendar(Number($("calendarDays").value), topic);
+      const preflightSource = `${source}\n${formatNamedSections(platformPack)}\n${riskDisclosure(topic)}`;
+      const preflightText = formatPreflightText(buildPreflightChecks(preflightSource));
+      const storyboardText = formatStoryboardText(buildStoryboard(topic, 15, category.universe));
       const sections = [
         ["01_FB貼文.txt", findSectionBody(platformPack, "FB")],
         ["02_Threads貼文.txt", findSectionBody(platformPack, "Threads")],
@@ -1318,17 +1341,10 @@ CTA：${item.cta}`;
         ["09_發布前檢查.txt", preflightText]
       ];
       return [
-        "房仲自媒體工廠｜手動測試發文包",
-        `日期：${formatDailyPackDate(new Date())}`,
+        `########## ${category.folderName} ##########`,
+        `分類：${category.label}`,
         `主題：${topic}`,
-        `FB 排程網站：${getSocialUrl("fbScheduleUrl", DEFAULT_FB_SCHEDULE_URL)}`,
-        `Threads 網站：${getSocialUrl("threadsUrl", DEFAULT_THREADS_URL)}`,
-        "",
-        "用途：測試每日 10:00 後台發文包格式；本檔只在瀏覽器本機下載，不會上傳雲端、不會寄信、不會使用 API Key。",
-        "手機流程：Google Drive 收到正式包後 → 複製平台文案 → 產圖/做影片 → 到社群平台發布或排程。",
-        "",
-        "今日月曆摘要",
-        formatCalendarText(calendarItems),
+        `建議宇宙：${category.universe}`,
         "",
         sections.map(([title, body]) => `========== ${title} ==========\n${body}`).join("\n\n")
       ].join("\n");
@@ -1336,6 +1352,99 @@ CTA：${item.cta}`;
 
     function findSectionBody(sections, title) {
       return sections.find(section => section.title === title)?.body || "";
+    }
+
+    function getDailyPackCategories() {
+      return [
+        {
+          label:"海外資產內容",
+          folderName:"01_海外資產內容",
+          topic:getOverseasPackTopic(),
+          universe:"海外置產宇宙"
+        },
+        {
+          label:"房仲自媒體內容",
+          folderName:"02_房仲自媒體內容",
+          topic:getRealtorMediaPackTopic(),
+          universe:$("storyUniverse").value === "海外置產宇宙" ? "系統宇宙" : $("storyUniverse").value || "系統宇宙"
+        }
+      ];
+    }
+
+    function getDailyPackTopic() {
+      const topic = $("topic").value.trim();
+      if (topic && topic !== "房仲自媒體內容") return topic;
+      if ($("topicContent").value) return $("topicContent").value;
+      if ($("overseasTopic").value) return $("overseasTopic").value;
+      const country = $("assetCountry").value || "馬來西亞";
+      const city = $("assetCity").value || "吉隆坡 KLCC";
+      const purpose = $("assetPurpose").value || "資產配置";
+      const audience = $("assetAudience").value || "高收入家庭";
+      if (country || city || purpose || audience) return `${audience}為什麼開始看${country}${city}${purpose}`;
+      return "高收入家庭為什麼開始看馬來西亞置產";
+    }
+
+    function getOverseasPackTopic() {
+      if ($("overseasTopic").value) return $("overseasTopic").value;
+      const country = $("assetCountry").value || "馬來西亞";
+      const city = $("assetCity").value || "吉隆坡 KLCC";
+      const purpose = $("assetPurpose").value || "資產配置";
+      const audience = $("assetAudience").value || "高收入家庭";
+      return `${audience}為什麼開始看${country}${city}${purpose}`;
+    }
+
+    function getRealtorMediaPackTopic() {
+      const topic = $("topic").value.trim();
+      const topicContent = $("topicContent").value;
+      if (topic && topic !== "房仲自媒體內容" && !isOverseasTopic(topic)) return topic;
+      if (topicContent && !isOverseasTopic(topicContent)) return topicContent;
+      return "房仲如何用短影音把曝光變成私訊名單";
+    }
+
+    function isOverseasTopic(topic) {
+      return /海外|馬來西亞|置產|資產|吉隆坡|KLCC|柔佛|匯率|稅務|產權/.test(topic || "");
+    }
+
+    function enrichDailyPackSource(source, topic) {
+      return [
+        source,
+        `正式包主題：${topic}`,
+        `強制 Hook：${strongHook(topic)}`,
+        riskDisclosure(topic)
+      ].join("\n");
+    }
+
+    function strengthenPlatformSection(section, topic) {
+      const body = section.body;
+      const hook = `Hook：${strongHook(topic)}`;
+      const cta = CTA_LIBRARY[$("conversionGoal").value] || CTA_LIBRARY["私訊諮詢"];
+      const risk = riskDisclosure(topic);
+      return {
+        ...section,
+        body: [
+          body.includes("Hook：") || body.includes("開場") ? body : `${hook}\n\n${body}`,
+          body.includes("CTA：") ? "" : `CTA：${cta}`,
+          body.includes("匯率") && body.includes("稅務") && body.includes("法規") && body.includes("產權") ? "" : risk
+        ].filter(Boolean).join("\n\n")
+      };
+    }
+
+    function strongHook(topic) {
+      if (topic.includes("海外") || topic.includes("馬來西亞") || topic.includes("置產") || topic.includes("資產")) {
+        return `很多人以為「${topic}」是在找便宜房子，其實真正關鍵是家庭資產不能只押在單一市場。`;
+      }
+      if (topic.includes("短影音") || topic.includes("自媒體") || topic.includes("內容")) {
+        return `如果你拍了很多內容卻沒有客戶私訊，問題通常不是流量，而是信任沒有被設計。`;
+      }
+      if (topic.includes("AI")) return `AI 不是拿來偷懶，而是幫房仲把每天的內容流程變穩定。`;
+      return `你以為「${topic}」只是單一問題，其實它會直接影響客戶願不願意相信你。`;
+    }
+
+    function riskDisclosure(topic) {
+      if (topic.includes("海外") || topic.includes("馬來西亞") || topic.includes("置產") || topic.includes("資產")) {
+        return "風險揭露：海外置產與資產配置需留意匯率、稅務、法規、產權、管理成本與市場波動，不能保證收益，請依個人財務狀況審慎評估。";
+      }
+      return "風險揭露：內容僅供行銷與溝通參考，實際成交仍需依客戶需求、物件條件、法規與市場狀況審慎判斷。";
     }
 
     function buildManualImagePrompt(topic) {
@@ -1447,37 +1556,46 @@ Generate a cinematic realistic vertical image for topic: ${topic}. Fixed charact
       ].join("\n");
     }
 
-    function buildPlatformPack(source) {
-      const topic = getCurrentTopic();
+    function buildPlatformPack(source, overrideTopic) {
+      const topic = overrideTopic || getCurrentTopic();
       const cta = CTA_LIBRARY[$("conversionGoal").value] || CTA_LIBRARY["私訊諮詢"];
       const profile = getBrandProfileText();
       return [
-        {title:"Reels",body:`開場 3 秒：${shortHook(topic)}
+        {title:"Reels",body:`Hook：${strongHook(topic)}
+開場 3 秒：${shortHook(topic)}
 節奏：快切、口播、字幕重點三段
 腳本：先講客戶痛點，再用一個具體判斷標準收斂。
 CTA：${cta}
 人設套用：${profile}`},
-        {title:"TikTok",body:`開場：你可能以為問題是流量，其實是信任沒有被設計。
+        {title:"TikTok",body:`Hook：${strongHook(topic)}
+開場：你可能以為問題是流量，其實是信任沒有被設計。
 內容：用反差句切入「${topic}」，每 5 秒換一個重點。
 收尾：留一個簡單問題讓觀眾留言。
 CTA：${cta}`},
-        {title:"YouTube Shorts",body:`標題：${topic}，真正該先看的不是表面數字
+        {title:"YouTube Shorts",body:`Hook：${strongHook(topic)}
+標題：${topic}，真正該先看的不是表面數字
 結構：Hook → 1 個錯誤觀念 → 2 個判斷重點 → 下一步
 畫面：人物口播搭配文件、城市、手機訊息畫面。
 CTA：${cta}`},
-        {title:"FB",body:`${shortHook(topic)}
+        {title:"FB",body:`Hook：${strongHook(topic)}
+
+${shortHook(topic)}
 
 很多房仲或客戶卡住，不是因為資訊太少，而是資訊沒有變成決策順序。
 
 今天用「${topic}」做例子，先看人、再看需求、最後才看產品。
 
 ${cta}`},
-        {title:"Threads",body:`1. ${shortHook(topic)}
+        {title:"Threads",body:`Hook：${strongHook(topic)}
+
+1. ${shortHook(topic)}
 2. 真正有用的內容，不只是曝光，而是讓客戶知道你怎麼判斷。
 3. 先講痛點，再講風險，最後才講方案。
 4. 房仲自媒體最重要的是穩定建立信任。
 5. ${cta}`},
-        {title:"LINE 私訊",body:`你好，我看到你對「${topic}」有興趣。
+        {title:"LINE 私訊",body:`Hook：${strongHook(topic)}
+
+你好，我看到你對「${topic}」有興趣。
 
 我可以先幫你用三個方向初步判斷：
 1. 目前需求
