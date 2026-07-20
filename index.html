@@ -37,6 +37,8 @@
     .secondary{background:#151515;color:white}
     .ghost{background:#f3f3f3;color:#333}
     .mini{padding:8px 10px;border-radius:8px;font-size:12px}
+    .download-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:10px;padding:12px 16px;font-weight:900;background:#151515;color:white;min-width:180px}
+    .download-link.disabled{pointer-events:none;opacity:.55;background:#f3f3f3;color:#777}
     button:disabled{opacity:.55;cursor:not-allowed}
     pre{white-space:pre-wrap;word-break:break-word;background:#111;color:#f8f4e8;border-radius:12px;padding:16px;line-height:1.8;min-height:220px;overflow:auto}
     .error{background:#fff1f1;color:var(--danger);border:1px solid #fecaca;border-radius:10px;padding:10px;font-size:13px;margin-top:10px}
@@ -240,6 +242,13 @@
           <button class="secondary" id="storyCopyAll" type="button">複製全部分鏡</button>
           <button class="ghost" id="storyDownload" type="button">下載分鏡 .txt</button>
         </div>
+        <div style="margin-top:12px">
+          <label for="storyPackageDownload">生成後下載包</label>
+          <div class="actions">
+            <a class="download-link disabled" id="storyPackageDownload" href="#" download="房叔生成分鏡下載包.txt" aria-disabled="true">產生後可下載</a>
+          </div>
+          <div class="hint">產生分鏡後會自動建立可下載的 .txt 檔案，內含主題、秒數、宇宙模式與每一幕完整提示詞。</div>
+        </div>
         <div class="ok" style="margin-top:12px">每 5 秒一個場景；15 秒 3 場、30 秒 6 場、60 秒 12 場。Flux 產生分鏡圖，Seedance 只產生動態。</div>
         <div id="storyError"></div>
       </section>
@@ -265,6 +274,7 @@
     const HISTORY_KEY = "uncleHouseAiToolProjectsV4";
     let lastContentText = "";
     let lastStoryboardText = "";
+    let storyPackageUrl = "";
 
     const TOPIC_LIBRARY = {
       "自媒體經營": ["個人定位", "內容企劃", "IP人設", "粉絲互動", "私域轉化"],
@@ -564,6 +574,7 @@
       const scenes = buildStoryboard(topic, Number($("storyDuration").value), $("storyUniverse").value);
       lastStoryboardText = formatStoryboardText(scenes);
       renderStoryboard(scenes);
+      updateStoryPackageLink(topic, scenes);
       saveHistory({type:"storyboard",title:`${topic}｜${$("storyDuration").value}s｜${$("storyUniverse").value}`,text:lastStoryboardText,storyboard:scenes,form:collectStoryboardForm()});
     };
 
@@ -685,6 +696,27 @@ ${scene.emotion}`;
 
     function formatStoryboardText(scenes) {
       return scenes.map(formatSceneText).join("\n\n---\n\n");
+    }
+
+    function updateStoryPackageLink(topic, scenes) {
+      if (storyPackageUrl) URL.revokeObjectURL(storyPackageUrl);
+      const packageText = [
+        `房叔生成分鏡下載包`,
+        `主題：${topic}`,
+        `秒數：${$("storyDuration").value}`,
+        `宇宙模式：${$("storyUniverse").value}`,
+        `生成時間：${new Date().toLocaleString("zh-TW")}`,
+        "",
+        formatStoryboardText(scenes)
+      ].join("\n");
+      const blob = new Blob([packageText], { type: "text/plain;charset=utf-8" });
+      storyPackageUrl = URL.createObjectURL(blob);
+      const download = $("storyPackageDownload");
+      download.href = storyPackageUrl;
+      download.download = `${safeFilename(topic)}_生成分鏡下載包.txt`;
+      download.textContent = "下載生成包 .txt";
+      download.classList.remove("disabled");
+      download.setAttribute("aria-disabled", "false");
     }
 
     function renderResultCards(text) {
@@ -856,7 +888,10 @@ ${scene.emotion}`;
         activateTab("storyboardPanel");
         applyStoryboardForm(item.form);
         lastStoryboardText = item.text || "";
-        if (item.storyboard) renderStoryboard(item.storyboard);
+        if (item.storyboard) {
+          renderStoryboard(item.storyboard);
+          updateStoryPackageLink(item.form?.storyTopic || item.title || "房叔生成分鏡", item.storyboard);
+        }
       } else {
         activateTab("contentPanel");
         applyContentForm(item.form);
@@ -900,6 +935,10 @@ ${scene.emotion}`;
       a.download = filename.replace(/[\\/:*?"<>|]/g, "_");
       a.click();
       URL.revokeObjectURL(a.href);
+    }
+
+    function safeFilename(text) {
+      return (text || "房叔").slice(0, 24).replace(/[\\/:*?"<>|]/g, "_");
     }
 
     function showError(message) {
