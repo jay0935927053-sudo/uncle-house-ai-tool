@@ -399,6 +399,26 @@
           <button class="ghost" id="storyDownload" type="button">下載分鏡 .txt</button>
         </div>
         <div style="margin-top:12px">
+          <label>生成網站連接</label>
+          <div class="grid">
+            <div>
+              <input id="gptGeneratorUrl" type="url" placeholder="貼上 GPT 圖片生成網站路徑" />
+              <div class="actions" style="margin-top:8px">
+                <button class="secondary mini" id="saveGeneratorLinks" type="button">儲存連接</button>
+                <button class="ghost mini" id="openGptGenerator" type="button">開啟 GPT</button>
+              </div>
+            </div>
+            <div>
+              <input id="cdanceGeneratorUrl" type="url" placeholder="貼上 Cdance 2.0 影片生成網站路徑" />
+              <div class="actions" style="margin-top:8px">
+                <button class="secondary mini" id="copyGeneratorLinks" type="button">複製兩個連接</button>
+                <button class="ghost mini" id="openCdanceGenerator" type="button">開啟 Cdance 2.0</button>
+              </div>
+            </div>
+          </div>
+          <div class="hint">填一次會保存在目前瀏覽器；產生分鏡下載包時，也會把兩個生成網站路徑一起寫進檔案。</div>
+        </div>
+        <div style="margin-top:12px">
           <label for="storyPackageDownload">生成後下載包</label>
           <div class="actions">
             <a class="download-link disabled" id="storyPackageDownload" href="#" download="房叔生成分鏡下載包.txt" aria-disabled="true">產生後可下載</a>
@@ -538,6 +558,7 @@
     const MATERIAL_LIBRARY_KEY = "uncleHouseMaterialLibraryV1";
     const CONTENT_BOARD_KEY = "uncleHouseContentBoardV1";
     const LEAD_CRM_KEY = "uncleHouseLeadCrmV1";
+    const GENERATOR_LINKS_KEY = "uncleHouseGeneratorLinksV1";
     let lastContentText = "";
     let lastStoryboardText = "";
     let lastCalendarText = "";
@@ -689,6 +710,7 @@
     };
     loadBrandProfile();
     renderMaterialLibrary();
+    loadGeneratorLinks();
 
     function systemPrompt() {
       return "你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。";
@@ -881,6 +903,21 @@
       if (!lastStoryboardText) return showStoryError("目前沒有可下載分鏡，請先產生分鏡。");
       downloadText("房叔生成分鏡.txt", lastStoryboardText);
     };
+
+    $("saveGeneratorLinks").onclick = () => {
+      saveGeneratorLinks();
+      $("saveGeneratorLinks").textContent = "已儲存";
+      setTimeout(() => $("saveGeneratorLinks").textContent = "儲存連接", 1200);
+    };
+
+    $("copyGeneratorLinks").onclick = async () => {
+      const text = formatGeneratorLinks();
+      if (!text.trim()) return showStoryError("請先貼上 GPT 與 Cdance 2.0 的網站路徑。");
+      await copyText(text, $("copyGeneratorLinks"), "複製兩個連接");
+    };
+
+    $("openGptGenerator").onclick = () => openGeneratorUrl("gptGeneratorUrl", "請先貼上 GPT 圖片生成網站路徑。");
+    $("openCdanceGenerator").onclick = () => openGeneratorUrl("cdanceGeneratorUrl", "請先貼上 Cdance 2.0 影片生成網站路徑。");
 
     $("downloadHistory").onclick = () => {
       const history = getHistory();
@@ -1757,6 +1794,7 @@ ${scene.emotion}`;
         `主題：${topic}`,
         `秒數：${$("storyDuration").value}`,
         `宇宙模式：${$("storyUniverse").value}`,
+        formatGeneratorLinks(),
         `生成時間：${new Date().toLocaleString("zh-TW")}`,
         "",
         formatStoryboardText(scenes)
@@ -1769,6 +1807,42 @@ ${scene.emotion}`;
       download.textContent = "下載生成包 .txt";
       download.classList.remove("disabled");
       download.setAttribute("aria-disabled", "false");
+    }
+
+    function loadGeneratorLinks() {
+      try {
+        const links = JSON.parse(localStorage.getItem(GENERATOR_LINKS_KEY) || "{}");
+        $("gptGeneratorUrl").value = links.gpt || "";
+        $("cdanceGeneratorUrl").value = links.cdance || "";
+      } catch {}
+    }
+
+    function saveGeneratorLinks() {
+      localStorage.setItem(GENERATOR_LINKS_KEY, JSON.stringify({
+        gpt:$("gptGeneratorUrl").value.trim(),
+        cdance:$("cdanceGeneratorUrl").value.trim()
+      }));
+    }
+
+    function formatGeneratorLinks() {
+      const gpt = $("gptGeneratorUrl").value.trim();
+      const cdance = $("cdanceGeneratorUrl").value.trim();
+      return [
+        `GPT 圖片生成網站：${gpt || "未設定"}`,
+        `Cdance 2.0 影片生成網站：${cdance || "未設定"}`
+      ].join("\n");
+    }
+
+    function openGeneratorUrl(id, errorMessage) {
+      const url = $(id).value.trim();
+      if (!url) return showStoryError(errorMessage);
+      try {
+        const normalized = new URL(url);
+        saveGeneratorLinks();
+        window.open(normalized.href, "_blank", "noopener,noreferrer");
+      } catch {
+        showStoryError("網站路徑格式不正確，請貼上完整網址，例如 https://...");
+      }
     }
 
     function renderResultCards(text) {
@@ -1869,7 +1943,7 @@ ${scene.emotion}`;
     }
 
     function collectStoryboardForm() {
-      return {storyTopic:$("storyTopic").value,storyDuration:$("storyDuration").value,storyUniverse:$("storyUniverse").value};
+      return {storyTopic:$("storyTopic").value,storyDuration:$("storyDuration").value,storyUniverse:$("storyUniverse").value,gptGeneratorUrl:$("gptGeneratorUrl").value,cdanceGeneratorUrl:$("cdanceGeneratorUrl").value};
     }
 
     function applyStoryboardForm(form) {
@@ -1877,6 +1951,8 @@ ${scene.emotion}`;
       $("storyTopic").value = form.storyTopic || "";
       $("storyDuration").value = form.storyDuration || "15";
       $("storyUniverse").value = form.storyUniverse || "焦慮宇宙";
+      $("gptGeneratorUrl").value = form.gptGeneratorUrl || $("gptGeneratorUrl").value;
+      $("cdanceGeneratorUrl").value = form.cdanceGeneratorUrl || $("cdanceGeneratorUrl").value;
     }
 
     function getHistory() {
