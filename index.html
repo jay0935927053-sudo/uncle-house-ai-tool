@@ -65,8 +65,15 @@
     .history-item{background:#fffdf8;border:1px solid var(--line);border-radius:12px;padding:12px}
     .history-title{font-weight:900;margin-bottom:6px}
     .history-time{font-size:12px;color:var(--muted)}
+    .calendar-list{display:grid;gap:10px;margin-top:14px}
+    .calendar-item{display:grid;grid-template-columns:70px 1fr;gap:12px;background:#fffdf8;border:1px solid var(--line);border-radius:12px;padding:12px}
+    .calendar-day{font-weight:900;color:#5e4a08}
+    .calendar-topic{font-weight:900;margin-bottom:6px}
+    .calendar-detail{font-size:13px;line-height:1.75;color:#333;white-space:pre-wrap}
+    .compact-list{display:grid;gap:8px;margin-top:10px}
+    .compact-item{background:#faf7ee;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;line-height:1.6}
     .raw-result{display:none}
-    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
+    @media(max-width:760px){.grid,.grid-3,.scene-grid,.tabs,.calendar-item{grid-template-columns:1fr}.brand img{width:48px;height:48px}h1{font-size:18px}}
   </style>
 </head>
 <body>
@@ -100,6 +107,77 @@
           <button class="ghost" id="toggleKey" type="button">顯示 / 隱藏 Key</button>
           <button class="ghost" id="clearKey" type="button">清除 Key</button>
         </div>
+      </section>
+
+      <section class="box">
+        <h2>個人品牌人設設定</h2>
+        <div class="grid-3">
+          <div>
+            <label for="brandPosition">房仲定位</label>
+            <input id="brandPosition" type="text" placeholder="例：專做海外置產與高資產家庭配置" />
+          </div>
+          <div>
+            <label for="brandArea">服務區域</label>
+            <input id="brandArea" type="text" placeholder="例：台北、新北、吉隆坡" />
+          </div>
+          <div>
+            <label for="brandAudience">核心客群</label>
+            <input id="brandAudience" type="text" placeholder="例：高收入家庭、企業主、房仲夥伴" />
+          </div>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div>
+            <label for="brandTone">內容語氣</label>
+            <select id="brandTone">
+              <option>專業穩重</option>
+              <option>生活化親切</option>
+              <option>故事感</option>
+              <option>高資產顧問感</option>
+              <option>短影音強節奏</option>
+            </select>
+          </div>
+          <div>
+            <label for="brandSignature">固定結尾</label>
+            <input id="brandSignature" type="text" placeholder="例：我是房叔，幫房仲把流量變成交。" />
+          </div>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="secondary" id="saveBrandProfile" type="button">儲存人設</button>
+          <button class="ghost" id="clearBrandProfile" type="button">清除人設</button>
+        </div>
+        <div class="hint">儲存後會保存在目前瀏覽器，之後生成內容、月曆、多平台改寫都會自動套用。</div>
+      </section>
+
+      <section class="box">
+        <h2>案例庫 / 素材庫</h2>
+        <div class="grid">
+          <div>
+            <label for="materialType">素材類型</label>
+            <select id="materialType">
+              <option>成交案例</option>
+              <option>客戶問題</option>
+              <option>物件亮點</option>
+              <option>海外資產資料</option>
+            </select>
+          </div>
+          <div>
+            <label for="materialSelect">生成時選用素材</label>
+            <select id="materialSelect"></select>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <label for="materialTitle">素材標題</label>
+          <input id="materialTitle" type="text" placeholder="例：企業主第一次看 KLCC 置產最擔心的三件事" />
+        </div>
+        <div style="margin-top:12px">
+          <label for="materialBody">素材內容</label>
+          <textarea id="materialBody" placeholder="貼上成交故事、客戶提問、物件賣點、海外資產資料摘要"></textarea>
+        </div>
+        <div class="actions" style="margin-top:12px">
+          <button class="secondary" id="saveMaterial" type="button">儲存素材</button>
+          <button class="ghost" id="deleteMaterial" type="button">刪除選用素材</button>
+        </div>
+        <div id="materialList" class="compact-list"></div>
       </section>
 
       <section class="box">
@@ -208,6 +286,74 @@
         <pre id="result">生成結果會出現在這裡。</pre>
         <div id="sectionCards" class="result-cards"></div>
       </section>
+
+      <section class="box">
+        <h2>一鍵多平台改寫</h2>
+        <div class="actions">
+          <button class="primary" id="platformGenerate" type="button">拆成 6 平台內容</button>
+          <button class="secondary" id="platformCopy" type="button">複製平台包</button>
+          <button class="ghost" id="platformDownload" type="button">下載平台包 .txt</button>
+        </div>
+        <div class="hint">同一篇內容會拆成 Reels、TikTok、YouTube Shorts、FB、Threads、LINE 私訊。</div>
+        <div id="platformError"></div>
+        <div id="platformResult" class="result-cards"></div>
+      </section>
+
+      <section class="box">
+        <h2>成交漏斗腳本</h2>
+        <div class="actions">
+          <button class="primary" id="funnelGenerate" type="button">產生漏斗腳本</button>
+          <button class="secondary" id="funnelCopy" type="button">複製漏斗</button>
+          <button class="ghost" id="funnelDownload" type="button">下載漏斗 .txt</button>
+        </div>
+        <div class="hint">每支影片自動產生留言關鍵字、私訊話術、預約諮詢、追蹤訊息。</div>
+        <div id="funnelError"></div>
+        <div id="funnelResult" class="result-cards"></div>
+      </section>
+
+      <section class="box">
+        <h2>發布前檢查</h2>
+        <div class="actions">
+          <button class="primary" id="preflightGenerate" type="button">檢查目前內容</button>
+          <button class="secondary" id="preflightCopy" type="button">複製檢查表</button>
+        </div>
+        <div class="hint">檢查標題吸引力、Hook 強度、CTA、風險揭露、是否太像硬銷售。</div>
+        <div id="preflightError"></div>
+        <div id="preflightResult" class="result-cards"></div>
+      </section>
+
+      <section class="box">
+        <h2>內容月曆</h2>
+        <div class="grid-3">
+          <div>
+            <label for="calendarDays">天數</label>
+            <select id="calendarDays">
+              <option value="7">7 天</option>
+              <option value="30">30 天</option>
+            </select>
+          </div>
+          <div>
+            <label for="calendarPlatform">主平台</label>
+            <select id="calendarPlatform"></select>
+          </div>
+          <div>
+            <label for="calendarFrequency">發布頻率</label>
+            <select id="calendarFrequency">
+              <option>每日一篇</option>
+              <option>工作日發布</option>
+              <option>隔日發布</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions" style="margin-top:14px">
+          <button class="primary" id="calendarGenerate" type="button">產生內容月曆</button>
+          <button class="secondary" id="calendarCopy" type="button">複製月曆</button>
+          <button class="ghost" id="calendarDownload" type="button">下載月曆 .txt</button>
+        </div>
+        <div class="hint">會依照目前主題、房仲自媒體分類、海外企劃欄位與轉化目標，自動排每日選題、平台、內容角度與 CTA。</div>
+        <div id="calendarError"></div>
+        <div id="calendarResult" class="calendar-list"></div>
+      </section>
     </section>
 
     <section id="storyboardPanel" class="tab-panel">
@@ -272,8 +418,14 @@
     const GPT_MODEL = "gpt-5.6-terra";
     const IMAGE_MODEL = "V3 圖片生成模型";
     const HISTORY_KEY = "uncleHouseAiToolProjectsV4";
+    const BRAND_PROFILE_KEY = "uncleHouseBrandProfileV1";
+    const MATERIAL_LIBRARY_KEY = "uncleHouseMaterialLibraryV1";
     let lastContentText = "";
     let lastStoryboardText = "";
+    let lastCalendarText = "";
+    let lastPlatformText = "";
+    let lastFunnelText = "";
+    let lastPreflightText = "";
     let storyPackageUrl = "";
 
     const TOPIC_LIBRARY = {
@@ -315,6 +467,15 @@
     const ASSET_BUDGETS = ["未指定","300萬台幣以下","300-600萬台幣","600-1000萬台幣","1000-2000萬台幣","2000萬台幣以上"];
     const ASSET_AUDIENCES = ["高收入家庭","企業主","退休規劃族","子女留學家庭","房仲海外案源開發","首次海外置產者","已有海外資產者"];
     const ASSET_TYPES = ["高樓住宅","服務式公寓","豪宅公寓","商辦店面","學生公寓","土地型資產","REITs概念"];
+    const CALENDAR_PLATFORMS = ["FB + Threads + Reels","FB","Threads","Reels","YouTube Shorts","LINE 私域"];
+    const CONTENT_ANGLES = ["痛點提醒","迷思破解","案例故事","教學拆解","風險提醒","工具示範","成交轉化"];
+    const CTA_LIBRARY = {
+      "私訊諮詢":"留言「諮詢」，我整理一份適合你的下一步。",
+      "名單留單":"留言「清單」，領取房仲自媒體選題表。",
+      "預約帶看":"留言「預約」，我協助你安排下一次看案重點。",
+      "成交轉化":"留言「評估」，我幫你判斷這個方向值不值得談。"
+    };
+    const PLATFORM_NAMES = ["Reels","TikTok","YouTube Shorts","FB","Threads","LINE 私訊"];
 
     const UNIVERSES = {
       "焦慮宇宙": {scenes:["night office","unread messages","clock","cold blue light","city lights"],emotions:["anxiety","pressure","restlessness"],subtitle:["你以為客戶不回，是因為他沒需求。","其實他只是還沒感覺到，你值得相信。","把內容變成系統，客戶才會開始靠近。"]},
@@ -377,6 +538,7 @@
     fillSelect("assetBudget", ASSET_BUDGETS);
     fillSelect("assetAudience", ASSET_AUDIENCES);
     fillSelect("assetType", ASSET_TYPES);
+    fillSelect("calendarPlatform", CALENDAR_PLATFORMS);
     syncSubtopics();
     syncAssetCities();
     $("topicCategory").onchange = syncSubtopics;
@@ -397,6 +559,8 @@
     $("topic").oninput = () => {
       if (!$("storyTopic").value.trim()) $("storyTopic").value = $("topic").value;
     };
+    loadBrandProfile();
+    renderMaterialLibrary();
 
     function systemPrompt() {
       return "你是房叔自媒體學院的內容總監，專長是房仲自媒體、AI工具、馬來西亞置產與個人品牌。輸出必須用繁體中文，語氣直接、專業、可執行，避免浮誇成功學。核心句：做自媒體不是在追流量，是在建立一台讓客戶主動找你的系統。";
@@ -410,6 +574,8 @@
 海外資產主題：${$("overseasTopic").value || "不指定"}
 海外資產情境：${$("overseasScenario").value}
 海外企劃模式：${$("assetCountry").value} / ${$("assetCity").value} / ${$("assetPurpose").value} / ${$("assetBudget").value} / ${$("assetAudience").value} / ${$("assetType").value}
+個人品牌人設：${getBrandProfileText()}
+選用素材：${getSelectedMaterialText()}
 房仲自媒體主題分類：${$("topicCategory").value}
 內容子題：${$("topicSubtopic").value}
 轉化目標：${$("conversionGoal").value}
@@ -599,6 +765,421 @@
       localStorage.setItem(HISTORY_KEY, JSON.stringify(kept));
       renderHistory();
     };
+
+    $("saveBrandProfile").onclick = () => {
+      localStorage.setItem(BRAND_PROFILE_KEY, JSON.stringify(collectBrandProfile()));
+      $("saveBrandProfile").textContent = "已儲存";
+      setTimeout(() => $("saveBrandProfile").textContent = "儲存人設", 1200);
+    };
+
+    $("clearBrandProfile").onclick = () => {
+      localStorage.removeItem(BRAND_PROFILE_KEY);
+      ["brandPosition","brandArea","brandAudience","brandSignature"].forEach(id => $(id).value = "");
+      $("brandTone").value = "專業穩重";
+    };
+
+    $("saveMaterial").onclick = () => {
+      const title = $("materialTitle").value.trim();
+      const body = $("materialBody").value.trim();
+      if (!title || !body) return showMaterialMessage("請先填素材標題與內容。");
+      const library = getMaterialLibrary();
+      const item = {id:Date.now().toString(36),type:$("materialType").value,title,body,createdAt:new Date().toISOString()};
+      localStorage.setItem(MATERIAL_LIBRARY_KEY, JSON.stringify([item, ...library].slice(0, 50)));
+      $("materialTitle").value = "";
+      $("materialBody").value = "";
+      renderMaterialLibrary(item.id);
+    };
+
+    $("deleteMaterial").onclick = () => {
+      const id = $("materialSelect").value;
+      if (!id) return showMaterialMessage("目前沒有選用素材可刪除。");
+      localStorage.setItem(MATERIAL_LIBRARY_KEY, JSON.stringify(getMaterialLibrary().filter(item => item.id !== id)));
+      renderMaterialLibrary();
+    };
+
+    $("platformGenerate").onclick = () => {
+      $("platformError").innerHTML = "";
+      const pack = buildPlatformPack(getWorkingSource());
+      lastPlatformText = formatNamedSections(pack);
+      renderNamedCards("platformResult", pack);
+      saveHistory({type:"platform",title:`${getCurrentTopic()}｜多平台改寫`,text:lastPlatformText,form:collectContentForm()});
+    };
+
+    $("platformCopy").onclick = async () => {
+      if (!lastPlatformText) return showPlatformError("目前沒有可複製平台包，請先產生多平台改寫。");
+      await copyText(lastPlatformText, $("platformCopy"), "複製平台包");
+    };
+
+    $("platformDownload").onclick = () => {
+      if (!lastPlatformText) return showPlatformError("目前沒有可下載平台包，請先產生多平台改寫。");
+      downloadText("房叔多平台內容包.txt", lastPlatformText);
+    };
+
+    $("funnelGenerate").onclick = () => {
+      $("funnelError").innerHTML = "";
+      const pack = buildFunnelPack(getWorkingSource());
+      lastFunnelText = formatNamedSections(pack);
+      renderNamedCards("funnelResult", pack);
+      saveHistory({type:"funnel",title:`${getCurrentTopic()}｜成交漏斗`,text:lastFunnelText,form:collectContentForm()});
+    };
+
+    $("funnelCopy").onclick = async () => {
+      if (!lastFunnelText) return showFunnelError("目前沒有可複製漏斗，請先產生成交漏斗腳本。");
+      await copyText(lastFunnelText, $("funnelCopy"), "複製漏斗");
+    };
+
+    $("funnelDownload").onclick = () => {
+      if (!lastFunnelText) return showFunnelError("目前沒有可下載漏斗，請先產生成交漏斗腳本。");
+      downloadText("房叔成交漏斗腳本.txt", lastFunnelText);
+    };
+
+    $("preflightGenerate").onclick = () => {
+      $("preflightError").innerHTML = "";
+      const checks = buildPreflightChecks(getWorkingSource());
+      lastPreflightText = formatPreflightText(checks);
+      renderPreflight(checks);
+      saveHistory({type:"preflight",title:`${getCurrentTopic()}｜發布前檢查`,text:lastPreflightText,form:collectContentForm()});
+    };
+
+    $("preflightCopy").onclick = async () => {
+      if (!lastPreflightText) return showPreflightError("目前沒有可複製檢查表，請先檢查目前內容。");
+      await copyText(lastPreflightText, $("preflightCopy"), "複製檢查表");
+    };
+
+    $("calendarGenerate").onclick = () => {
+      $("calendarError").innerHTML = "";
+      const topic = $("topic").value.trim() || $("topicContent").value || $("overseasTopic").value || "房仲自媒體內容";
+      const items = buildContentCalendar(Number($("calendarDays").value), topic);
+      lastCalendarText = formatCalendarText(items);
+      renderCalendar(items);
+      saveHistory({type:"calendar",title:`${topic}｜${$("calendarDays").value}天內容月曆`,text:lastCalendarText,calendar:items,form:collectContentForm()});
+    };
+
+    $("calendarCopy").onclick = async () => {
+      if (!lastCalendarText) return showCalendarError("目前沒有可複製月曆，請先產生內容月曆。");
+      await copyText(lastCalendarText, $("calendarCopy"), "複製月曆");
+    };
+
+    $("calendarDownload").onclick = () => {
+      if (!lastCalendarText) return showCalendarError("目前沒有可下載月曆，請先產生內容月曆。");
+      downloadText("房叔內容月曆.txt", lastCalendarText);
+    };
+
+    function buildContentCalendar(totalDays, baseTopic) {
+      const rows = [];
+      const selectedPlatform = $("calendarPlatform").value;
+      const platformCycle = selectedPlatform === "FB + Threads + Reels" ? ["FB","Threads","Reels","YouTube Shorts","LINE 私域"] : [selectedPlatform];
+      const topicPool = makeCalendarTopicPool(baseTopic);
+      for (let day = 1; day <= totalDays; day++) {
+        const angle = CONTENT_ANGLES[(day - 1) % CONTENT_ANGLES.length];
+        const platform = platformCycle[(day - 1) % platformCycle.length];
+        const topic = topicPool[(day - 1) % topicPool.length];
+        const publish = shouldPublish(day) ? "發布" : "備稿";
+        rows.push({
+          day,
+          publish,
+          platform,
+          angle,
+          topic: `${angle}｜${topic}`,
+          hook: buildCalendarHook(angle, topic),
+          cta: CTA_LIBRARY[$("conversionGoal").value] || CTA_LIBRARY["私訊諮詢"]
+        });
+      }
+      return rows;
+    }
+
+    function makeCalendarTopicPool(baseTopic) {
+      const pool = [
+        baseTopic,
+        $("topicSubtopic").value,
+        $("overseasScenario").value !== "不指定情境" ? $("overseasScenario").value : "",
+        `${$("assetCountry").value}${$("assetCity").value}置產重點`,
+        `${$("assetAudience").value}最常問的海外資產問題`,
+        `${$("assetPurpose").value}如何判斷適不適合`,
+        `${$("assetType").value}的優勢與風險`,
+        "房仲如何用短影音建立信任",
+        "把曝光變成私訊名單的內容設計",
+        "AI內容工具如何幫房仲省時間"
+      ].filter(Boolean);
+      return [...new Set(pool)];
+    }
+
+    function shouldPublish(day) {
+      const frequency = $("calendarFrequency").value;
+      if (frequency === "每日一篇") return true;
+      if (frequency === "隔日發布") return day % 2 === 1;
+      const date = new Date();
+      date.setDate(date.getDate() + day - 1);
+      const weekday = date.getDay();
+      return weekday !== 0 && weekday !== 6;
+    }
+
+    function buildCalendarHook(angle, topic) {
+      const hooks = {
+        "痛點提醒": `如果你一直在拍內容，卻沒有客戶私訊，問題可能不是曝光，而是「${topic}」沒有被說清楚。`,
+        "迷思破解": `很多人以為 ${topic} 只要講優點就好，其實真正成交前，客戶先看風險。`,
+        "案例故事": `有一位客戶一開始也卡在 ${topic}，後來他改變的不是預算，而是判斷順序。`,
+        "教學拆解": `今天用 3 個步驟，拆解 ${topic} 怎麼講得讓客戶聽得懂。`,
+        "風險提醒": `${topic} 不是不能做，而是要先知道哪些地方不能省略。`,
+        "工具示範": `用 AI 做 ${topic}，重點不是偷懶，而是把內容流程變穩定。`,
+        "成交轉化": `如果你想把 ${topic} 變成諮詢，最後一句 CTA 要設計得很清楚。`
+      };
+      return hooks[angle] || topic;
+    }
+
+    function renderCalendar(items) {
+      $("calendarResult").innerHTML = "";
+      items.forEach(item => {
+        const card = document.createElement("article");
+        card.className = "calendar-item";
+        const day = document.createElement("div");
+        day.className = "calendar-day";
+        day.textContent = `Day ${item.day}`;
+        const detail = document.createElement("div");
+        detail.innerHTML = "";
+        const title = document.createElement("div");
+        title.className = "calendar-topic";
+        title.textContent = item.topic;
+        const body = document.createElement("div");
+        body.className = "calendar-detail";
+        body.textContent = `狀態：${item.publish}
+平台：${item.platform}
+角度：${item.angle}
+Hook：${item.hook}
+CTA：${item.cta}`;
+        const copy = document.createElement("button");
+        copy.className = "secondary mini";
+        copy.type = "button";
+        copy.style.marginTop = "10px";
+        copy.textContent = "Copy";
+        copy.onclick = () => copyText(formatCalendarItem(item), copy, "Copy");
+        detail.appendChild(title);
+        detail.appendChild(body);
+        detail.appendChild(copy);
+        card.appendChild(day);
+        card.appendChild(detail);
+        $("calendarResult").appendChild(card);
+      });
+    }
+
+    function formatCalendarItem(item) {
+      return `Day ${item.day}
+狀態：${item.publish}
+平台：${item.platform}
+主題：${item.topic}
+角度：${item.angle}
+Hook：${item.hook}
+CTA：${item.cta}`;
+    }
+
+    function formatCalendarText(items) {
+      return items.map(formatCalendarItem).join("\n\n---\n\n");
+    }
+
+    function collectBrandProfile() {
+      return {
+        position:$("brandPosition").value.trim(),
+        area:$("brandArea").value.trim(),
+        audience:$("brandAudience").value.trim(),
+        tone:$("brandTone").value,
+        signature:$("brandSignature").value.trim()
+      };
+    }
+
+    function loadBrandProfile() {
+      try {
+        const profile = JSON.parse(localStorage.getItem(BRAND_PROFILE_KEY) || "{}");
+        $("brandPosition").value = profile.position || "";
+        $("brandArea").value = profile.area || "";
+        $("brandAudience").value = profile.audience || "";
+        $("brandTone").value = profile.tone || "專業穩重";
+        $("brandSignature").value = profile.signature || "";
+      } catch {}
+    }
+
+    function getBrandProfileText() {
+      const profile = collectBrandProfile();
+      const parts = [
+        profile.position ? `定位：${profile.position}` : "",
+        profile.area ? `服務區域：${profile.area}` : "",
+        profile.audience ? `核心客群：${profile.audience}` : "",
+        `語氣：${profile.tone}`,
+        profile.signature ? `固定結尾：${profile.signature}` : ""
+      ].filter(Boolean);
+      return parts.length ? parts.join("；") : "未設定，使用房叔預設專業顧問語氣";
+    }
+
+    function getMaterialLibrary() {
+      try {
+        return JSON.parse(localStorage.getItem(MATERIAL_LIBRARY_KEY) || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function renderMaterialLibrary(selectedId = "") {
+      const library = getMaterialLibrary();
+      $("materialSelect").innerHTML = `<option value="">不選用素材</option>` + library.map(item => `<option value="${item.id}">${item.type}｜${item.title}</option>`).join("");
+      if (selectedId) $("materialSelect").value = selectedId;
+      $("materialList").innerHTML = "";
+      library.slice(0, 5).forEach(item => {
+        const row = document.createElement("div");
+        row.className = "compact-item";
+        row.textContent = `${item.type}｜${item.title}`;
+        $("materialList").appendChild(row);
+      });
+      if (!library.length) showMaterialMessage("目前還沒有素材，儲存後可在生成時選用。");
+    }
+
+    function getSelectedMaterial() {
+      const id = $("materialSelect").value;
+      return getMaterialLibrary().find(item => item.id === id);
+    }
+
+    function getSelectedMaterialText() {
+      const material = getSelectedMaterial();
+      if (!material) return "未選用素材";
+      return `${material.type}｜${material.title}：${material.body}`;
+    }
+
+    function showMaterialMessage(message) {
+      $("materialList").innerHTML = "";
+      const row = document.createElement("div");
+      row.className = "compact-item";
+      row.textContent = message;
+      $("materialList").appendChild(row);
+    }
+
+    function getCurrentTopic() {
+      return $("topic").value.trim() || $("topicContent").value || $("overseasTopic").value || "房仲自媒體內容";
+    }
+
+    function getWorkingSource() {
+      const result = getResultText();
+      const material = getSelectedMaterialText();
+      if (result) return result;
+      return [
+        `主題：${getCurrentTopic()}`,
+        `內容方向：${$("pillar").value}`,
+        `轉化目標：${$("conversionGoal").value}`,
+        `個人品牌人設：${getBrandProfileText()}`,
+        `選用素材：${material}`,
+        `海外企劃：${$("assetCountry").value} / ${$("assetCity").value} / ${$("assetPurpose").value} / ${$("assetAudience").value}`
+      ].join("\n");
+    }
+
+    function buildPlatformPack(source) {
+      const topic = getCurrentTopic();
+      const cta = CTA_LIBRARY[$("conversionGoal").value] || CTA_LIBRARY["私訊諮詢"];
+      const profile = getBrandProfileText();
+      return [
+        {title:"Reels",body:`開場 3 秒：${shortHook(topic)}
+節奏：快切、口播、字幕重點三段
+腳本：先講客戶痛點，再用一個具體判斷標準收斂。
+CTA：${cta}
+人設套用：${profile}`},
+        {title:"TikTok",body:`開場：你可能以為問題是流量，其實是信任沒有被設計。
+內容：用反差句切入「${topic}」，每 5 秒換一個重點。
+收尾：留一個簡單問題讓觀眾留言。
+CTA：${cta}`},
+        {title:"YouTube Shorts",body:`標題：${topic}，真正該先看的不是表面數字
+結構：Hook → 1 個錯誤觀念 → 2 個判斷重點 → 下一步
+畫面：人物口播搭配文件、城市、手機訊息畫面。
+CTA：${cta}`},
+        {title:"FB",body:`${shortHook(topic)}
+
+很多房仲或客戶卡住，不是因為資訊太少，而是資訊沒有變成決策順序。
+
+今天用「${topic}」做例子，先看人、再看需求、最後才看產品。
+
+${cta}`},
+        {title:"Threads",body:`1. ${shortHook(topic)}
+2. 真正有用的內容，不只是曝光，而是讓客戶知道你怎麼判斷。
+3. 先講痛點，再講風險，最後才講方案。
+4. 房仲自媒體最重要的是穩定建立信任。
+5. ${cta}`},
+        {title:"LINE 私訊",body:`你好，我看到你對「${topic}」有興趣。
+
+我可以先幫你用三個方向初步判斷：
+1. 目前需求
+2. 預算與時間
+3. 風險與下一步
+
+你可以先回我「想了解」或直接丟你的問題。`}
+      ].map(item => ({...item,body:`${item.body}\n\n來源摘要：${source.slice(0, 220)}`}));
+    }
+
+    function buildFunnelPack(source) {
+      const topic = getCurrentTopic();
+      const keyword = pickKeyword(topic);
+      return [
+        {title:"留言關鍵字",body:`關鍵字：「${keyword}」
+留言引導：想要我整理「${topic}」的判斷清單，留言 ${keyword}。`},
+        {title:"私訊話術",body:`你剛剛留言「${keyword}」，我先給你一個簡單方向：
+
+如果你正在評估 ${topic}，不要先問哪個最好，先確認你的目的、預算、時間和可承受風險。
+
+我可以再問你 3 個問題，幫你初步判斷適不適合。`},
+        {title:"預約諮詢",body:`如果你願意，我們可以約 15 分鐘快速整理：
+1. 你的目前狀況
+2. 你想解決的問題
+3. 下一步適合看內容、看案，還是先做風險檢查
+
+你平日晚上或週末哪個時間比較方便？`},
+        {title:"追蹤訊息",body:`上次你提到對「${topic}」有興趣，我整理了一個更簡單的判斷方式：
+
+先看目的，再看風險，最後才看方案。
+
+如果你還在比較，我可以幫你把幾個選項放在同一張表看。`},
+        {title:"二次成交推進",body:`這次先不急著推產品，我建議先把你的需求分成「必須要有」和「可以加分」。
+
+這樣下一次討論會更準，也比較不會被資訊帶著跑。
+
+來源摘要：${source.slice(0, 220)}`}
+      ];
+    }
+
+    function buildPreflightChecks(source) {
+      return [
+        {title:"標題吸引力",pass:source.length > 80 && /為什麼|怎麼|真相|關鍵|風險|成交|資產/.test(source),advice:"標題要有明確痛點或反差，不要只寫主題名稱。"},
+        {title:"Hook 強度",pass:/Hook|開場|你以為|很多人|如果你|為什麼/.test(source),advice:"前 3 秒要直接點出客戶心裡的卡點。"},
+        {title:"CTA 清楚度",pass:/CTA|留言|私訊|預約|諮詢|回覆/.test(source),advice:"每篇內容最後要有一個單一動作，不要同時叫人做太多事。"},
+        {title:"風險揭露",pass:/風險|匯率|稅務|法規|產權|成本/.test(source),advice:"海外資產內容一定要保留風險、成本與法規提醒。"},
+        {title:"避免硬銷售",pass:!/(限時搶購|保證獲利|穩賺|唯一機會|不買會後悔|立刻成交)/.test(source),advice:"避免壓迫式銷售，用顧問式提醒建立信任。"}
+      ];
+    }
+
+    function renderNamedCards(containerId, sections) {
+      const container = $(containerId);
+      container.innerHTML = "";
+      sections.forEach(section => renderCopyCard(container, section.title, section.body));
+    }
+
+    function formatNamedSections(sections) {
+      return sections.map(section => `【${section.title}】\n${section.body}`).join("\n\n---\n\n");
+    }
+
+    function renderPreflight(checks) {
+      const container = $("preflightResult");
+      container.innerHTML = "";
+      const summary = checks.map(check => `${check.title}：${check.pass ? "通過" : "需補強"}\n建議：${check.advice}`).join("\n\n");
+      renderCopyCard(container, "發布前檢查表", summary);
+    }
+
+    function formatPreflightText(checks) {
+      return checks.map(check => `${check.title}：${check.pass ? "通過" : "需補強"}\n建議：${check.advice}`).join("\n\n");
+    }
+
+    function shortHook(topic) {
+      return `你以為「${topic}」只是內容題目，其實它決定客戶會不會相信你。`;
+    }
+
+    function pickKeyword(topic) {
+      if (topic.includes("海外") || topic.includes("馬來西亞") || topic.includes("置產")) return "海外";
+      if (topic.includes("AI")) return "AI";
+      if (topic.includes("自媒體") || topic.includes("短影音")) return "內容";
+      return "評估";
+    }
 
     function buildStoryboard(topic, duration, universeName) {
       const count = duration / 5;
@@ -800,7 +1381,7 @@ ${scene.emotion}`;
     }
 
     function collectContentForm() {
-      return ["topic","topicContent","overseasTopic","overseasScenario","assetCountry","assetCity","assetType","assetPurpose","assetBudget","assetAudience","pillar","format","topicCategory","topicSubtopic","conversionGoal"].reduce((data, id) => {
+      return ["topic","topicContent","overseasTopic","overseasScenario","assetCountry","assetCity","assetType","assetPurpose","assetBudget","assetAudience","pillar","format","topicCategory","topicSubtopic","conversionGoal","brandPosition","brandArea","brandAudience","brandTone","brandSignature","materialSelect","calendarDays","calendarPlatform","calendarFrequency"].reduce((data, id) => {
         data[id] = $(id).value;
         return data;
       }, {});
@@ -892,6 +1473,26 @@ ${scene.emotion}`;
           renderStoryboard(item.storyboard);
           updateStoryPackageLink(item.form?.storyTopic || item.title || "房叔生成分鏡", item.storyboard);
         }
+      } else if (item.type === "calendar") {
+        activateTab("contentPanel");
+        applyContentForm(item.form);
+        lastCalendarText = item.text || "";
+        if (item.calendar) renderCalendar(item.calendar);
+      } else if (item.type === "platform") {
+        activateTab("contentPanel");
+        applyContentForm(item.form);
+        lastPlatformText = item.text || "";
+        renderNamedCards("platformResult", parseSections(lastPlatformText));
+      } else if (item.type === "funnel") {
+        activateTab("contentPanel");
+        applyContentForm(item.form);
+        lastFunnelText = item.text || "";
+        renderNamedCards("funnelResult", parseSections(lastFunnelText));
+      } else if (item.type === "preflight") {
+        activateTab("contentPanel");
+        applyContentForm(item.form);
+        lastPreflightText = item.text || "";
+        renderCopyCard($("preflightResult"), "發布前檢查表", lastPreflightText);
       } else {
         activateTab("contentPanel");
         applyContentForm(item.form);
@@ -949,6 +1550,22 @@ ${scene.emotion}`;
 
     function showStoryError(message) {
       $("storyError").innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function showCalendarError(message) {
+      $("calendarError").innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function showPlatformError(message) {
+      $("platformError").innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function showFunnelError(message) {
+      $("funnelError").innerHTML = `<div class="error">${message}</div>`;
+    }
+
+    function showPreflightError(message) {
+      $("preflightError").innerHTML = `<div class="error">${message}</div>`;
     }
 
     renderHistory();
