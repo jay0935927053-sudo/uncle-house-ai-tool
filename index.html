@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow,noarchive,noimageindex" />
-  <title>房叔 AI 提示詞生成器</title>
+  <title>房仲自媒體工廠</title>
   <style>
     :root{--gold:#c9a227;--black:#080808;--line:#e8e2d5;--paper:#fffaf0;--ink:#151515;--muted:#666;--danger:#b91c1c;--ok:#166534}
     *{box-sizing:border-box}
@@ -91,7 +91,7 @@
     <div class="brand">
       <img src="logo-uncle-house.jpg" alt="Uncle House Logo" />
       <div>
-        <h1>房叔 AI 提示詞生成器</h1>
+        <h1>房仲自媒體工廠</h1>
         <div class="sub">內容生成・生成分鏡・專案紀錄</div>
       </div>
     </div>
@@ -880,7 +880,7 @@
     $("download").onclick = () => {
       const text = getResultText();
       if (!text) return showError("目前沒有可下載內容，請先成功生成。");
-      downloadText("房叔AI提示詞.txt", text);
+      downloadText("房仲自媒體工廠提示詞.txt", text);
     };
 
     $("storyGenerate").onclick = () => {
@@ -922,7 +922,7 @@
     $("downloadHistory").onclick = () => {
       const history = getHistory();
       if (!history.length) return;
-      downloadText("房叔AI專案紀錄.json", JSON.stringify(history, null, 2));
+      downloadText("房仲自媒體工廠專案紀錄.json", JSON.stringify(history, null, 2));
     };
 
     $("clearHistory").onclick = () => {
@@ -1997,7 +1997,7 @@ ${scene.emotion}`;
         [
           ["重新開啟", () => openHistoryItem(item)],
           [item.favorite ? "取消收藏" : "收藏", () => toggleFavorite(item.id)],
-          ["下載", () => downloadText(`${item.title || "房叔AI專案"}.txt`, item.text || "")],
+          ["下載", () => downloadText(`${item.title || "房仲自媒體工廠專案"}.txt`, item.text || "")],
           ["刪除", () => deleteHistory(item.id)]
         ].forEach(([label, handler]) => {
           const button = document.createElement("button");
