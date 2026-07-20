@@ -393,8 +393,9 @@
           <button class="primary" id="calendarGenerate" type="button">產生內容月曆</button>
           <button class="secondary" id="calendarCopy" type="button">複製月曆</button>
           <button class="ghost" id="calendarDownload" type="button">下載月曆 .txt</button>
+          <button class="ghost" id="manualPackDownload" type="button">下載測試發文包 .txt</button>
         </div>
-        <div class="hint">會依照目前主題、房仲自媒體分類、海外企劃欄位與轉化目標，自動排每日選題、平台、內容角度與 CTA。</div>
+        <div class="hint">會依照目前主題、房仲自媒體分類、海外企劃欄位與轉化目標，自動排每日選題、平台、內容角度與 CTA。測試發文包只在本機下載，不會讀取 API Key。</div>
         <div id="calendarError"></div>
         <div id="calendarResult" class="calendar-list"></div>
         <div id="calendarDateView" class="calendar-board"></div>
@@ -1130,6 +1131,15 @@
       downloadText("房叔內容月曆.txt", lastCalendarText);
     };
 
+    $("manualPackDownload").onclick = () => {
+      $("calendarError").innerHTML = "";
+      saveSocialLinks();
+      const pack = buildManualDailyPack();
+      const filename = `${formatDailyPackDate(new Date())}_房仲自媒體工廠_手動測試發文包.txt`;
+      downloadText(filename, pack);
+      saveHistory({type:"manualPack",title:`${getCurrentTopic()}｜手動測試發文包`,text:pack,form:collectContentForm()});
+    };
+
     function buildContentCalendar(totalDays, baseTopic) {
       const rows = [];
       const selectedPlatform = $("calendarPlatform").value;
@@ -1286,6 +1296,63 @@ CTA：${item.cta}`;
         "",
         items.map(formatCalendarItem).join("\n\n---\n\n")
       ].join("\n");
+    }
+
+    function buildManualDailyPack() {
+      const topic = getCurrentTopic();
+      const source = getWorkingSource();
+      const platformPack = buildPlatformPack(source);
+      const funnelPack = buildFunnelPack(source);
+      const preflightText = formatPreflightText(buildPreflightChecks(source));
+      const storyboardText = formatStoryboardText(buildStoryboard(topic, 15, $("storyUniverse").value || "海外置產宇宙"));
+      const calendarItems = lastCalendarItems.length ? lastCalendarItems : buildContentCalendar(Number($("calendarDays").value), topic);
+      const sections = [
+        ["01_FB貼文.txt", findSectionBody(platformPack, "FB")],
+        ["02_Threads貼文.txt", findSectionBody(platformPack, "Threads")],
+        ["03_Reels腳本.txt", findSectionBody(platformPack, "Reels")],
+        ["04_TikTok腳本.txt", findSectionBody(platformPack, "TikTok")],
+        ["05_YouTubeShorts腳本.txt", findSectionBody(platformPack, "YouTube Shorts")],
+        ["06_LINE私訊.txt", `${findSectionBody(platformPack, "LINE 私訊")}\n\n${formatNamedSections(funnelPack)}`],
+        ["07_圖片提示詞.txt", buildManualImagePrompt(topic)],
+        ["08_分鏡圖腳本.txt", storyboardText],
+        ["09_發布前檢查.txt", preflightText]
+      ];
+      return [
+        "房仲自媒體工廠｜手動測試發文包",
+        `日期：${formatDailyPackDate(new Date())}`,
+        `主題：${topic}`,
+        `FB 排程網站：${getSocialUrl("fbScheduleUrl", DEFAULT_FB_SCHEDULE_URL)}`,
+        `Threads 網站：${getSocialUrl("threadsUrl", DEFAULT_THREADS_URL)}`,
+        "",
+        "用途：測試每日 10:00 後台發文包格式；本檔只在瀏覽器本機下載，不會上傳雲端、不會寄信、不會使用 API Key。",
+        "手機流程：Google Drive 收到正式包後 → 複製平台文案 → 產圖/做影片 → 到社群平台發布或排程。",
+        "",
+        "今日月曆摘要",
+        formatCalendarText(calendarItems),
+        "",
+        sections.map(([title, body]) => `========== ${title} ==========\n${body}`).join("\n\n")
+      ].join("\n");
+    }
+
+    function findSectionBody(sections, title) {
+      return sections.find(section => section.title === title)?.body || "";
+    }
+
+    function buildManualImagePrompt(topic) {
+      return `Flux / GPT 圖片提示詞：
+Generate a cinematic realistic vertical image for topic: ${topic}. Fixed character: ${FIXED_CHARACTER}. Visual style: ${FIXED_STYLE}. Scene: luxury real estate content studio, organized desk, overseas property planning documents, warm orange practical lighting, blue-gray cinematic background, natural acting, professional Taiwanese realtor, no text, no watermark.
+
+備用場景：
+1. luxury condo lobby, Taiwanese family discussing overseas property planning with a mature realtor, cinematic realism, 9:16 vertical, no text, no watermark.
+2. KLCC-inspired skyline through a window, wealth planning documents on desk, low key lighting, high contrast, no text, no watermark.
+3. clean workspace, CRM dashboard mood, calm realtor preparing daily content factory workflow, luxury commercial film, no text, no watermark.`;
+    }
+
+    function formatDailyPackDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
 
     function collectBrandProfile() {
